@@ -1,9 +1,11 @@
 import { api } from "@/lib/axios";
-import type { LoginRequest, LoginResponse } from "../types/auth.types";
+import type { ApiResponse, LoginRequest, LoginResponse } from "../types/auth.types";
 
 export const authService = {
     login: (data: LoginRequest) =>
-        api.post<LoginResponse>("/auth/login", data),
+        api
+            .post<ApiResponse<LoginResponse>>("/auth/login", data)
+            .then((response) => response.data.data),
 
     forgotPassword: (email: string) =>
         api.post("/auth/forgot-password", { email }),

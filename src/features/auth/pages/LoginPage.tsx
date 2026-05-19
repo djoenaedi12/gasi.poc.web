@@ -15,15 +15,15 @@ import {
     loginSchema,
     type LoginFormData,
 } from "@/features/auth/schemas/loginSchema"
+import { useLogin } from "@/features/auth/hooks/useLogin"
 import { cn } from "@/lib/utils"
-import { useAuthStore } from "@/stores/useAuthStore"
 
 function LoginForm({
     className,
     ...props
 }: React.ComponentProps<"form">) {
     const navigate = useNavigate()
-    const setUser = useAuthStore((state) => state.setUser)
+    const login = useLogin()
     const form = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -32,14 +32,13 @@ function LoginForm({
         },
     })
 
-    const onSubmit = (data: LoginFormData) => {
-        localStorage.setItem("accessToken", "demo-access-token")
-        setUser({
-            name: data.username,
-            email: `${data.username}@company.com`,
-            role: "Administrator",
+    const onSubmit = async (data: LoginFormData) => {
+        await login.mutateAsync({
+            grantType: "password",
+            provider: "local",
+            username: data.username,
+            password: data.password,
         })
-        navigate("/")
     }
 
     return (
@@ -84,7 +83,7 @@ function LoginForm({
 
                 <FormButton
                     className="w-full"
-                    loading={form.formState.isSubmitting}
+                    loading={form.formState.isSubmitting || login.isPending}
                     loadingText="Logging in..."
                 >
                     Login

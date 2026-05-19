@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import type { ReactNode } from "react";
+import type { UseQueryResult } from "@tanstack/react-query";
 import {
     Controller,
     type FieldPath,
@@ -17,12 +18,24 @@ import {
     LookupPicker,
     type LookupOption,
 } from "@/components/molecules/lookup-picker";
+import type { GenericFilter, PageResult, SearchRequest } from "@/types/api.types";
 
-type FormLookupPickerBaseProps<TFieldValues extends FieldValues> = {
+type FormLookupPickerBaseProps<
+    TFieldValues extends FieldValues,
+    TLookupData = LookupOption,
+> = {
     form: UseFormReturn<TFieldValues>;
     name: FieldPath<TFieldValues>;
     label: string;
-    options: LookupOption[];
+    options?: LookupOption[];
+    selectedOptions?: LookupOption[];
+    pageQuery?: (
+        request: SearchRequest,
+    ) => UseQueryResult<PageResult<TLookupData> | undefined, unknown>;
+    mapOption?: (item: TLookupData) => LookupOption;
+    serverSide?: boolean;
+    searchFields?: string[];
+    buildFilter?: (search: string) => GenericFilter | undefined;
     description?: ReactNode;
     tooltip?: ReactNode;
     labelAction?: ReactNode;
@@ -34,28 +47,46 @@ type FormLookupPickerBaseProps<TFieldValues extends FieldValues> = {
     className?: string;
 };
 
-type FormLookupPickerSingleProps<TFieldValues extends FieldValues> =
-    FormLookupPickerBaseProps<TFieldValues> & {
+type FormLookupPickerSingleProps<
+    TFieldValues extends FieldValues,
+    TLookupData = LookupOption,
+> =
+    FormLookupPickerBaseProps<TFieldValues, TLookupData> & {
         multiple?: false;
     };
 
-type FormLookupPickerMultipleProps<TFieldValues extends FieldValues> =
-    FormLookupPickerBaseProps<TFieldValues> & {
+type FormLookupPickerMultipleProps<
+    TFieldValues extends FieldValues,
+    TLookupData = LookupOption,
+> =
+    FormLookupPickerBaseProps<TFieldValues, TLookupData> & {
         multiple: true;
     };
 
-type FormLookupPickerProps<TFieldValues extends FieldValues> =
-    | FormLookupPickerSingleProps<TFieldValues>
-    | FormLookupPickerMultipleProps<TFieldValues>;
+type FormLookupPickerProps<
+    TFieldValues extends FieldValues,
+    TLookupData = LookupOption,
+> =
+    | FormLookupPickerSingleProps<TFieldValues, TLookupData>
+    | FormLookupPickerMultipleProps<TFieldValues, TLookupData>;
 
-export function FormLookupPicker<TFieldValues extends FieldValues>(
-    props: FormLookupPickerProps<TFieldValues>,
+export function FormLookupPicker<
+    TFieldValues extends FieldValues,
+    TLookupData = LookupOption,
+>(
+    props: FormLookupPickerProps<TFieldValues, TLookupData>,
 ) {
     const {
         form,
         name,
         label,
         options,
+        selectedOptions,
+        pageQuery,
+        mapOption,
+        serverSide,
+        searchFields,
+        buildFilter,
         description,
         tooltip,
         labelAction,
@@ -89,6 +120,12 @@ export function FormLookupPicker<TFieldValues extends FieldValues>(
                             multiple
                             title={label}
                             options={options}
+                            selectedOptions={selectedOptions}
+                            pageQuery={pageQuery}
+                            mapOption={mapOption}
+                            serverSide={serverSide}
+                            searchFields={searchFields}
+                            buildFilter={buildFilter}
                             value={(field.value as string[]) ?? []}
                             onChange={(value) => field.onChange(value)}
                             onClear={() => field.onChange([])}
@@ -103,6 +140,12 @@ export function FormLookupPicker<TFieldValues extends FieldValues>(
                         <LookupPicker
                             title={label}
                             options={options}
+                            selectedOptions={selectedOptions}
+                            pageQuery={pageQuery}
+                            mapOption={mapOption}
+                            serverSide={serverSide}
+                            searchFields={searchFields}
+                            buildFilter={buildFilter}
                             value={(field.value as string) ?? undefined}
                             onChange={(value) => field.onChange(value)}
                             onClear={() => field.onChange(undefined)}

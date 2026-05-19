@@ -9,11 +9,15 @@ export function useLogin() {
     const setUser = useAuthStore((s) => s.setUser);
 
     return useMutation({
-        mutationFn: (data: LoginRequest) =>
-            authService.login(data).then((r) => r.data),
-        onSuccess: (data) => {
+        mutationFn: (data: LoginRequest) => authService.login(data),
+        onSuccess: (data, variables) => {
             localStorage.setItem("accessToken", data.accessToken);
-            setUser(data.user);
+            localStorage.setItem("refreshToken", data.refreshToken);
+            setUser({
+                name: variables.username,
+                email: variables.username,
+                role: data.scope || "User",
+            });
             navigate("/");
         },
     });

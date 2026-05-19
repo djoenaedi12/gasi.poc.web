@@ -1,8 +1,9 @@
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { X } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
+import type { UseQueryResult } from "@tanstack/react-query";
 
-import { DataTable } from "@/components/datatable/data-table";
+import { DataTable, ServerDataTable } from "@/components/datatable/data-table";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -12,6 +13,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import type { GenericFilter, PageResult, SearchRequest } from "@/types/api.types";
 
 export type LookupOption = {
     label: string;
@@ -19,9 +21,17 @@ export type LookupOption = {
     description?: string;
 };
 
-type LookupPickerBaseProps = {
-    options: LookupOption[];
+type LookupPickerBaseProps<TLookupData = LookupOption> = {
     title: string;
+    options?: LookupOption[];
+    selectedOptions?: LookupOption[];
+    pageQuery?: (
+        request: SearchRequest,
+    ) => UseQueryResult<PageResult<TLookupData> | undefined, unknown>;
+    mapOption?: (item: TLookupData) => LookupOption;
+    serverSide?: boolean;
+    searchFields?: string[];
+    buildFilter?: (search: string) => GenericFilter | undefined;
     placeholder?: string;
     searchPlaceholder?: string;
     emptyMessage?: string;
@@ -32,25 +42,35 @@ type LookupPickerBaseProps = {
     "aria-invalid"?: boolean;
 };
 
-type SingleLookupPickerProps = LookupPickerBaseProps & {
+type SingleLookupPickerProps<TLookupData = LookupOption> = LookupPickerBaseProps<TLookupData> & {
     multiple?: false;
     value?: string;
     onChange: (value: string) => void;
     onClear?: () => void;
 };
 
-type MultipleLookupPickerProps = LookupPickerBaseProps & {
+type MultipleLookupPickerProps<TLookupData = LookupOption> = LookupPickerBaseProps<TLookupData> & {
     multiple: true;
     value?: string[];
     onChange: (value: string[]) => void;
     onClear?: () => void;
 };
 
-type LookupPickerProps = SingleLookupPickerProps | MultipleLookupPickerProps;
+type LookupPickerProps<TLookupData = LookupOption> =
+    | SingleLookupPickerProps<TLookupData>
+    | MultipleLookupPickerProps<TLookupData>;
 
-export function LookupPicker(props: LookupPickerProps) {
+export function LookupPicker<TLookupData = LookupOption>(
+    props: LookupPickerProps<TLookupData>,
+) {
     const {
-        options,
+        options = [],
+        selectedOptions: controlledSelectedOptions = [],
+        pageQuery,
+        mapOption,
+        serverSide = true,
+        searchFields = ["label"],
+        buildFilter,
         title,
         placeholder = "Select item",
         searchPlaceholder = "Search...",
@@ -67,8 +87,15 @@ export function LookupPicker(props: LookupPickerProps) {
         : props.value
             ? [props.value]
             : [];
-    const selectedOptions = options.filter((option) =>
-        selectedValues.includes(option.value),
+
+    const lookupOptions = useMemo(
+        () => [...controlledSelectedOptions, ...options],
+        [controlledSelectedOptions, options],
+    );
+
+    const selectedOptions = lookupOptions.filter((option, index) =>
+        selectedValues.includes(option.value) &&
+        lookupOptions.findIndex((item) => item.value === option.value) === index,
     );
 
     const getSelectedRowSelection = () =>
@@ -133,6 +160,57 @@ export function LookupPicker(props: LookupPickerProps) {
         setRowSelection({});
     };
 
+    const handleUseSelected = (selectedRows: LookupOption[]) => (
+        <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+                if (props.multiple) {
+                    props.onChange(selectedRows.map((row) => row.value));
+                } else if (selectedRows[0]) {
+                    props.onChange(selectedRows[0].value);
+                }
+
+                setOpen(false);
+            }}
+        >
+            Use selected
+        </Button>
+    );
+
+    const tableProps = {
+        columns,
+        searchPlaceholder,
+        emptyTitle: emptyMessage,
+        defaultPageSize: 5,
+        pageSizeOptions: [5, 10, 20],
+        enableRowSelection: true,
+        rowSelectionMode: props.multiple ? "multiple" as const : "single" as const,
+        getRowId: (option: LookupOption) => option.value,
+        rowSelection,
+        onRowSelectionChange: handleRowSelectionChange,
+        renderSelectedActions: handleUseSelected,
+    };
+
+    const lookupPageQuery = pageQuery
+        ? (request: SearchRequest) => {
+            const query = pageQuery(request);
+            const toOption =
+                mapOption ?? ((item: TLookupData) => item as LookupOption);
+
+            return {
+                ...query,
+                data: query.data
+                    ? {
+                        ...query.data,
+                        content: query.data.content.map(toOption),
+                    }
+                    : undefined,
+            } as UseQueryResult<PageResult<LookupOption> | undefined, unknown>;
+        }
+        : undefined;
+    const shouldUseServerSide = serverSide && lookupPageQuery;
+
     return (
         <>
             <div className={cn("flex items-center", className)}>
@@ -181,39 +259,21 @@ export function LookupPicker(props: LookupPickerProps) {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <DataTable
-                        columns={columns}
-                        data={options}
-                        searchKey="label"
-                        searchPlaceholder={searchPlaceholder}
-                        emptyTitle={emptyMessage}
-                        defaultPageSize={5}
-                        pageSizeOptions={[5, 10, 20]}
-                        enableRowSelection
-                        rowSelectionMode={props.multiple ? "multiple" : "single"}
-                        getRowId={(option) => option.value}
-                        rowSelection={rowSelection}
-                        onRowSelectionChange={handleRowSelectionChange}
-                        renderSelectedActions={(selectedRows) => (
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => {
-                                    if (props.multiple) {
-                                        props.onChange(
-                                            selectedRows.map((row) => row.value),
-                                        );
-                                    } else if (selectedRows[0]) {
-                                        props.onChange(selectedRows[0].value);
-                                    }
-
-                                    setOpen(false);
-                                }}
-                            >
-                                Use selected
-                            </Button>
-                        )}
-                    />
+                    {shouldUseServerSide ? (
+                        <ServerDataTable
+                            {...tableProps}
+                            pageQuery={lookupPageQuery}
+                            searchFields={searchFields}
+                            buildFilter={buildFilter}
+                            loadingTitle={`Loading ${title}...`}
+                        />
+                    ) : (
+                        <DataTable
+                            {...tableProps}
+                            data={options}
+                            searchKey="label"
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
         </>

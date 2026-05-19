@@ -5,15 +5,22 @@ import {
     getPaginationRowModel,
     getSortedRowModel,
     type ColumnDef,
+    type Header,
+    type PaginationState,
     type RowSelectionState,
     type SortingState,
+    type TableOptions,
     type Updater,
     useReactTable,
 } from "@tanstack/react-table";
+import type { UseQueryResult } from "@tanstack/react-query";
 import {
     ChevronDown,
+    ChevronFirst,
+    ChevronLast,
     ChevronLeft,
     ChevronRight,
+    Download,
     Search,
     Settings2,
     SearchX,
@@ -27,6 +34,12 @@ import {
     EmptyContent,
 } from "@/components/ui/empty";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import type {
+    GenericFilter,
+    PageResult,
+    SearchRequest,
+    SortOrder,
+} from "@/types/api.types";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,38 +61,37 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { exportVisibleTableRowsToCsv } from "./data-table-export";
+import { DataTableSortableHeader } from "./data-table-sortable-header";
+import {
+    buildSearchFilter,
+    getColumnFieldIds,
+    getColumnClassName,
+    getColumnLabel,
+    getSavedColumnVisibility,
+    getInitialColumnVisibility,
+    type ColumnVisibilityState,
+    type DataTableColumn,
+} from "./data-table-utils";
 
-type ColumnVisibilityState = Record<string, boolean>;
-
-type DataTableColumnMeta = {
-    label?: string;
-    className?: string;
-};
-
-type DataTableColumn = {
-    id: string;
-    columnDef: {
-        header?: unknown;
-        meta?: DataTableColumnMeta;
-    };
-};
-
-function getColumnLabel(column: DataTableColumn) {
-    const metaLabel = column.columnDef.meta?.label;
-
-    if (metaLabel) {
-        return metaLabel;
+function renderHeader<TData>(header: Header<TData, unknown>) {
+    if (header.isPlaceholder) {
+        return null;
     }
 
-    if (typeof column.columnDef.header === "string") {
-        return column.columnDef.header;
+    if (header.column.getCanSort()) {
+        return (
+            <DataTableSortableHeader
+                label={getColumnLabel(header.column as DataTableColumn)}
+                column={header.column}
+            />
+        );
     }
 
-    return column.id;
-}
-
-function getColumnClassName(columnDef: { meta?: unknown }) {
-    return (columnDef.meta as DataTableColumnMeta | undefined)?.className;
+    return flexRender(
+        header.column.columnDef.header,
+        header.getContext(),
+    );
 }
 
 type DataTableAction = {
@@ -112,13 +124,128 @@ type DataTableProps<TData, TValue> = {
     onSearchChange?: (value: string) => void;
     toolbar?: ReactNode;
     toolbarEnd?: ReactNode;
-
     actions?: DataTableAction[];
     primaryAction?: DataTableAction;
-
     enableColumnSettings?: boolean;
     columnPreferenceKey?: string;
+    initialColumnVisibility?: ColumnVisibilityState;
+    onColumnVisibilityChange?: (visibility: ColumnVisibilityState) => void;
+    enableCsvExport?: boolean;
+    csvFileName?: string;
+
+    // Server-side props
+    serverSide?: boolean;
+    totalRows?: number;
+    page?: number;
+    pageSize?: number;
+    onPageChange?: (page: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
+    onSortingChange?: (sorts: { field: string; direction: "ASC" | "DESC" }[]) => void;
 };
+
+type ServerDataTableProps<TData, TValue> = Omit<
+    DataTableProps<TData, TValue>,
+    | "data"
+    | "serverSide"
+    | "totalRows"
+    | "page"
+    | "pageSize"
+    | "onPageChange"
+    | "onPageSizeChange"
+    | "onSortingChange"
+    | "searchValue"
+    | "onSearchChange"
+    | "initialColumnVisibility"
+> & {
+    pageQuery: (
+        request: SearchRequest,
+    ) => UseQueryResult<PageResult<TData> | undefined, unknown>;
+    searchFields?: string[];
+    buildFilter?: (search: string) => GenericFilter | undefined;
+    defaultSearchValue?: string;
+    defaultVisibleColumns?: string[];
+    loadingTitle?: string;
+    errorDescription?: string;
+};
+
+export function ServerDataTable<TData, TValue>({
+    columns,
+    pageQuery,
+    searchFields,
+    buildFilter,
+    columnPreferenceKey,
+    defaultSearchValue = "",
+    defaultPageSize = 10,
+    defaultVisibleColumns,
+    loadingTitle = "Loading data...",
+    emptyTitle = "No data found",
+    emptyDescription,
+    errorDescription = "Unable to load data from API.",
+    ...props
+}: ServerDataTableProps<TData, TValue>) {
+    const [search, setSearch] = useState(defaultSearchValue);
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(defaultPageSize);
+    const [sorts, setSorts] = useState<SortOrder[]>([]);
+    const [columnVisibility, setColumnVisibility] =
+        useState<ColumnVisibilityState>(() =>
+            getInitialColumnVisibility(columns, defaultVisibleColumns, columnPreferenceKey),
+        );
+
+    const fields = useMemo(() => {
+        const fieldIds = getColumnFieldIds(columns);
+        return fieldIds.filter((field) => columnVisibility[field] !== false);
+    }, [columnVisibility, columns]);
+
+    const searchRequest = useMemo<SearchRequest>(() => {
+        const filter = buildFilter
+            ? buildFilter(search)
+            : buildSearchFilter(search, searchFields);
+
+        return { filter, sorts, fields, page, size: pageSize };
+    }, [buildFilter, fields, page, pageSize, search, searchFields, sorts]);
+
+    const query = pageQuery(searchRequest);
+    const pageResult = query.data;
+
+    const handleSearchChange = (value: string) => {
+        setSearch(value);
+        setPage(0);
+    };
+
+    const handlePageSizeChange = (size: number) => {
+        setPageSize(size);
+        setPage(0);
+    };
+
+    const handleSortingChange = (nextSorts: SortOrder[]) => {
+        setSorts(nextSorts);
+        setPage(0);
+    };
+
+    return (
+        <DataTable
+            {...props}
+            serverSide
+            columns={columns}
+            data={pageResult?.content ?? []}
+            totalRows={pageResult?.totalElements}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+            onSortingChange={handleSortingChange}
+            searchValue={search}
+            onSearchChange={handleSearchChange}
+            defaultPageSize={defaultPageSize}
+            emptyTitle={query.isLoading ? loadingTitle : emptyTitle}
+            emptyDescription={query.isError ? errorDescription : emptyDescription}
+            columnPreferenceKey={columnPreferenceKey}
+            initialColumnVisibility={columnVisibility}
+            onColumnVisibilityChange={setColumnVisibility}
+        />
+    );
+}
 
 export function DataTable<TData, TValue>({
     columns,
@@ -129,7 +256,7 @@ export function DataTable<TData, TValue>({
     emptyDescription,
     emptyAction,
     defaultPageSize = 10,
-    pageSizeOptions = [10, 20, 50],
+    pageSizeOptions = [5, 10, 20, 50, 100],
     enableRowSelection = false,
     rowSelectionMode = "multiple",
     getRowId,
@@ -144,6 +271,17 @@ export function DataTable<TData, TValue>({
     primaryAction,
     enableColumnSettings = false,
     columnPreferenceKey,
+    initialColumnVisibility,
+    onColumnVisibilityChange,
+    enableCsvExport = false,
+    csvFileName = "table-export.csv",
+    serverSide = false,
+    totalRows,
+    page = 0,
+    pageSize,
+    onPageChange,
+    onPageSizeChange,
+    onSortingChange,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [internalGlobalFilter, setInternalGlobalFilter] = useState("");
@@ -151,25 +289,9 @@ export function DataTable<TData, TValue>({
         useState<RowSelectionState>({});
 
     const [columnVisibility, setColumnVisibility] =
-        useState<ColumnVisibilityState>(() => {
-            if (!columnPreferenceKey) {
-                return {};
-            }
-
-            const saved = localStorage.getItem(
-                `${columnPreferenceKey}:column-visibility`,
-            );
-
-            if (!saved) {
-                return {};
-            }
-
-            try {
-                return JSON.parse(saved) as ColumnVisibilityState;
-            } catch {
-                return {};
-            }
-        });
+        useState<ColumnVisibilityState>(() =>
+            initialColumnVisibility ?? getSavedColumnVisibility(columnPreferenceKey),
+        );
 
     useEffect(() => {
         if (!columnPreferenceKey) {
@@ -184,6 +306,7 @@ export function DataTable<TData, TValue>({
 
     const globalFilter = searchValue ?? internalGlobalFilter;
     const rowSelection = controlledRowSelection ?? internalRowSelection;
+    const resolvedPageSize = pageSize ?? defaultPageSize;
 
     const handleSearchChange = (value: string) => {
         if (onSearchChange) {
@@ -204,6 +327,23 @@ export function DataTable<TData, TValue>({
         }
 
         setInternalRowSelection(nextSelection);
+    };
+
+    const handleColumnVisibilityChange = (
+        updater: Updater<ColumnVisibilityState>,
+    ) => {
+        const nextVisibility =
+            typeof updater === "function" ? updater(columnVisibility) : updater;
+
+        setColumnVisibility(nextVisibility);
+        onColumnVisibilityChange?.(nextVisibility);
+    };
+
+    const handlePaginationChange = (updater: Updater<PaginationState>) => {
+        const current: PaginationState = { pageIndex: page, pageSize: resolvedPageSize };
+        const next = typeof updater === "function" ? updater(current) : updater;
+        if (next.pageIndex !== current.pageIndex) onPageChange?.(next.pageIndex);
+        if (next.pageSize !== current.pageSize) onPageSizeChange?.(next.pageSize);
     };
 
     const tableColumns = useMemo<ColumnDef<TData, unknown>[]>(() => {
@@ -250,36 +390,52 @@ export function DataTable<TData, TValue>({
         ];
     }, [columns, enableRowSelection, rowSelectionMode]);
 
-    const table = useReactTable({
+    const tableOptions: TableOptions<TData> = {
         data,
         columns: tableColumns,
         state: {
             sorting,
-            globalFilter,
+            globalFilter: serverSide ? undefined : globalFilter,
             rowSelection,
             columnVisibility,
+            ...(serverSide && {
+                pagination: { pageIndex: page, pageSize: resolvedPageSize },
+            }),
         },
         getRowId,
         enableRowSelection,
         enableMultiRowSelection: rowSelectionMode === "multiple",
         initialState: {
-            pagination: {
-                pageSize: defaultPageSize,
-            },
+            pagination: { pageSize: defaultPageSize },
         },
-        onSortingChange: setSorting,
-        onGlobalFilterChange: (value) => {
+        manualFiltering: serverSide,
+        manualPagination: serverSide,
+        manualSorting: serverSide,
+        rowCount: serverSide ? (totalRows ?? 0) : undefined,
+        onSortingChange: (updater) => {
+            const next = typeof updater === "function" ? updater(sorting) : updater;
+            setSorting(next);
+            if (serverSide) {
+                onSortingChange?.(next.map((s) => ({ field: s.id, direction: s.desc ? "DESC" : "ASC" as const })));
+            }
+        },
+        onRowSelectionChange: handleRowSelectionChange,
+        onColumnVisibilityChange: handleColumnVisibilityChange,
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+    };
+
+    if (serverSide) {
+        tableOptions.onPaginationChange = handlePaginationChange;
+    } else {
+        tableOptions.onGlobalFilterChange = (value) => {
             const nextValue =
                 typeof value === "function" ? value(globalFilter) : value;
             handleSearchChange(String(nextValue));
-        },
-        onRowSelectionChange: handleRowSelectionChange,
-        onColumnVisibilityChange: setColumnVisibility,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        globalFilterFn: (row, _columnId, filterValue) => {
+        };
+        tableOptions.getFilteredRowModel = getFilteredRowModel();
+        tableOptions.globalFilterFn = (row, _columnId, filterValue) => {
             const value = String(filterValue).toLowerCase();
 
             if (!searchKey) {
@@ -291,8 +447,10 @@ export function DataTable<TData, TValue>({
             return String(row.getValue(searchKey))
                 .toLowerCase()
                 .includes(value);
-        },
-    });
+        };
+    }
+
+    const table = useReactTable(tableOptions);
 
     const selectedRows = table
         .getSelectedRowModel()
@@ -347,9 +505,27 @@ export function DataTable<TData, TValue>({
         </DropdownMenu>
     ) : null;
 
+    const handleCsvExport = () => {
+        exportVisibleTableRowsToCsv(table, csvFileName);
+    };
+
+    const csvExportAction = enableCsvExport ? (
+        <Button
+            type="button"
+            variant="outline"
+            onClick={handleCsvExport}
+            disabled={!table.getRowModel().rows.length}
+        >
+            <Download className="size-4" />
+            Export
+        </Button>
+    ) : null;
+
     const generatedToolbarEnd =
-        visibleActions.length || columnSettingsAction || resolvedPrimaryAction ? (
+        csvExportAction || visibleActions.length || columnSettingsAction || resolvedPrimaryAction ? (
             <>
+                {csvExportAction}
+
                 {visibleActions.map((action) => (
                     <Button
                         key={action.label}
@@ -414,6 +590,38 @@ export function DataTable<TData, TValue>({
 
     const resolvedToolbarEnd = toolbarEnd ?? generatedToolbarEnd;
 
+    const currentPageIndex = table.getState().pagination.pageIndex;
+    const [inputPage, setInputPage] = useState(String(currentPageIndex + 1));
+
+    useEffect(() => {
+        setInputPage(String(currentPageIndex + 1));
+    }, [currentPageIndex]);
+
+    const handleGoToPage = (value: string) => {
+        const val = Number(value);
+        if (val >= 1 && val <= table.getPageCount()) {
+            table.setPageIndex(val - 1);
+        } else {
+            setInputPage(String(table.getState().pagination.pageIndex + 1));
+        }
+    };
+
+    const totalCount = serverSide
+        ? (totalRows ?? 0)
+        : table.getFilteredRowModel().rows.length;
+
+    const currentPageSize = serverSide
+        ? resolvedPageSize
+        : table.getState().pagination.pageSize;
+
+    const handlePageSizeChange = (newSize: number) => {
+        if (serverSide) {
+            onPageSizeChange?.(newSize);
+        } else {
+            table.setPageSize(newSize);
+        }
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -459,12 +667,7 @@ export function DataTable<TData, TValue>({
                                             header.column.columnDef,
                                         )}
                                     >
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext(),
-                                            )}
+                                        {renderHeader<TData>(header)}
                                     </TableHead>
                                 ))}
                             </TableRow>
@@ -529,15 +732,15 @@ export function DataTable<TData, TValue>({
                     <div className="flex items-center gap-2">
                         <span>Rows per page</span>
                         <select
-                            value={table.getState().pagination.pageSize}
+                            value={currentPageSize}
                             onChange={(event) =>
-                                table.setPageSize(Number(event.target.value))
+                                handlePageSizeChange(Number(event.target.value))
                             }
                             className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                         >
-                            {pageSizeOptions.map((pageSize) => (
-                                <option key={pageSize} value={pageSize}>
-                                    {pageSize}
+                            {pageSizeOptions.map((size) => (
+                                <option key={size} value={size}>
+                                    {size}
                                 </option>
                             ))}
                         </select>
@@ -545,7 +748,7 @@ export function DataTable<TData, TValue>({
 
                     <p>
                         Showing {table.getRowModel().rows.length} of{" "}
-                        {table.getFilteredRowModel().rows.length} row(s).
+                        {totalCount} row(s).
                     </p>
                 </div>
 
@@ -553,23 +756,58 @@ export function DataTable<TData, TValue>({
                     <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        onClick={() => table.previousPage()}
+                        size="icon-sm"
+                        onClick={() => table.setPageIndex(0)}
                         disabled={!table.getCanPreviousPage()}
                     >
-                        <ChevronLeft className="size-4" />
-                        Previous
+                        <ChevronFirst className="size-4" />
                     </Button>
 
                     <Button
                         type="button"
                         variant="outline"
-                        size="sm"
+                        size="icon-sm"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                    >
+                        <ChevronLeft className="size-4" />
+                    </Button>
+
+                    <div className="flex items-center gap-1.5 text-sm">
+                        <span className="text-muted-foreground">Page</span>
+                        <Input
+                            type="number"
+                            min={1}
+                            max={table.getPageCount()}
+                            value={inputPage}
+                            onChange={(e) => setInputPage(e.target.value)}
+                            onBlur={(e) => handleGoToPage(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") handleGoToPage(inputPage);
+                            }}
+                            className="h-8 w-14 text-center"
+                        />
+                        <span className="text-muted-foreground">of {table.getPageCount()}</span>
+                    </div>
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
                     >
-                        Next
                         <ChevronRight className="size-4" />
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                        disabled={!table.getCanNextPage()}
+                    >
+                        <ChevronLast className="size-4" />
                     </Button>
                 </div>
             </div>
