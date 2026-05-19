@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# GASI POC — Monorepo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Plugin architecture mirip PF4J (Spring Boot) untuk React + Vite.
 
-Currently, two official plugins are available:
+## Struktur
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+gasi.poc.web/
+├── core-api/          # Kontrak plugin (ExtensionPoints, PluginRegistry, interfaces)
+├── core-starter/      # Utility & hooks (useExtensions, PluginSlot, PluginLoader)
+├── platform-app/      # Aplikasi utama React + Vite + Shadcn
+└── plugins/
+    └── plugin-example/  # Contoh plugin (build → UMD bundle)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Cara kerja
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+core-api  →  core-starter  →  platform-app
+    ↑                               ↑
+    └──────── plugin-*  ────────────┘
+              (build jadi .umd.js, copy manual ke platform-app/public/plugins/)
+```
+
+## Development
+
+```bash
+# Install semua dependencies
+npm install
+
+# Jalankan platform-app
+npm run dev
+
+# Build plugin (output ke platform-app/public/plugins/)
+npm run build -w plugins/plugin-example
+
+# Build semua
+npm run build
+```
+
+## Membuat plugin baru
+
+1. Buat folder `plugins/nama-plugin/`
+2. Ikuti struktur `plugins/plugin-example/`
+3. Plugin depend ke `@gasi/core-api`
+4. Build plugin: `npm run build -w plugins/nama-plugin`
+5. File `.umd.js` otomatis masuk ke `platform-app/public/plugins/`
+6. Daftarkan URL di `platform-app/src/main.tsx`
+
+## Analogi Spring Boot PF4J
+
+| Spring Boot | React + Vite |
+|---|---|
+| `core-api` (Maven lib) | `core-api` (TS package) |
+| `core-starter` (Maven lib) | `core-starter` (TS package) |
+| `platform-app` (Spring Boot app) | `platform-app` (Vite app) |
+| `.jar` file | `.umd.js` file |
+| `plugins/` folder | `platform-app/public/plugins/` |
+| `PluginManager.loadPlugins()` | `loadAndStartPlugins()` |
+| `@Plugin` annotation | `pluginRegistry.register()` |
+| `@Extension` annotation | `extensions: [{ point, component }]` |

@@ -1,0 +1,19 @@
+{
+  "name": "@gasi/core-starter",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gasi/core-api": "*"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "@types/react": "^19.2.7"
+  }
+}
