@@ -1,6 +1,6 @@
 # GASI POC — Monorepo
 
-Plugin architecture mirip PF4J (Spring Boot) untuk React + Vite.
+Plugin architecture untuk React + Vite menggunakan npm workspaces.
 
 ## Struktur
 
@@ -10,7 +10,7 @@ gasi.poc.web/
 ├── core-starter/      # Utility & hooks (useExtensions, PluginSlot, PluginLoader)
 ├── platform-app/      # Aplikasi utama React + Vite + Shadcn
 └── plugins/
-    └── plugin-example/  # Contoh plugin (build → UMD bundle)
+    └── plugin-example/  # Contoh implementasi plugin
 ```
 
 ## Cara kerja
@@ -19,8 +19,11 @@ gasi.poc.web/
 core-api  →  core-starter  →  platform-app
     ↑                               ↑
     └──────── plugin-*  ────────────┘
-              (build jadi .umd.js, copy manual ke platform-app/public/plugins/)
 ```
+
+Plugin di-build menjadi file `.umd.js` dan di-copy manual ke
+`platform-app/public/plugins/`. Platform akan load plugin saat startup —
+jika file tidak ada, plugin di-skip dan app tetap berjalan normal.
 
 ## Development
 
@@ -43,19 +46,6 @@ npm run build
 1. Buat folder `plugins/nama-plugin/`
 2. Ikuti struktur `plugins/plugin-example/`
 3. Plugin depend ke `@gasi/core-api`
-4. Build plugin: `npm run build -w plugins/nama-plugin`
+4. Build: `npm run build -w plugins/nama-plugin`
 5. File `.umd.js` otomatis masuk ke `platform-app/public/plugins/`
-6. Daftarkan URL di `platform-app/src/main.tsx`
-
-## Analogi Spring Boot PF4J
-
-| Spring Boot | React + Vite |
-|---|---|
-| `core-api` (Maven lib) | `core-api` (TS package) |
-| `core-starter` (Maven lib) | `core-starter` (TS package) |
-| `platform-app` (Spring Boot app) | `platform-app` (Vite app) |
-| `.jar` file | `.umd.js` file |
-| `plugins/` folder | `platform-app/public/plugins/` |
-| `PluginManager.loadPlugins()` | `loadAndStartPlugins()` |
-| `@Plugin` annotation | `pluginRegistry.register()` |
-| `@Extension` annotation | `extensions: [{ point, component }]` |
+6. Daftarkan URL-nya di `platform-app/src/main.tsx`

@@ -1,73 +1,75 @@
-# React + TypeScript + Vite
+# @gasi/platform-app
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplikasi utama GASI berbasis React + Vite + Shadcn. Berfungsi sebagai host
+yang memuat dan menjalankan plugin-plugin yang tersedia.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** + **TypeScript**
+- **Vite 7**
+- **Shadcn UI** + **Tailwind CSS 4**
+- **TanStack Query** — server state management
+- **TanStack Table** — data table
+- **Zustand** — client state management
+- **React Hook Form** + **Zod** — form & validasi
+- **React Router 7** — routing
+- **Axios** — HTTP client
 
-## React Compiler
+## Struktur
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+platform-app/
+├── public/
+│   └── plugins/          # Taruh file .umd.js plugin di sini (manual)
+├── src/
+│   ├── components/
+│   │   ├── ui/           # Shadcn components
+│   │   ├── molecules/    # Composite components (form, picker, dll)
+│   │   ├── organisms/    # Layout components (sidebar, header)
+│   │   └── datatable/    # Data table components
+│   ├── features/         # Feature modules (auth, dashboard, dll)
+│   ├── layouts/          # Page layouts
+│   ├── lib/              # Utilities (axios, base-hooks, base-service)
+│   ├── routes/           # Route definitions
+│   ├── stores/           # Zustand stores
+│   ├── types/            # Global TypeScript types
+│   └── main.tsx          # Entry point + load plugins
+└── vite.config.ts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+# Dari root monorepo
+npm run dev
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Atau langsung dari folder ini
+npm install
+npm run dev
+```
+
+## Menambah Plugin
+
+1. Build plugin yang diinginkan:
+   ```bash
+   npm run build -w plugins/nama-plugin
+   ```
+2. File `.umd.js` otomatis masuk ke `public/plugins/`
+3. Daftarkan URL-nya di `src/main.tsx`:
+   ```ts
+   await loadAndStartPlugins([
+     '/plugins/nama-plugin.umd.js',
+   ]);
+   ```
+4. Gunakan `PluginSlot` di halaman yang sesuai:
+   ```tsx
+   <PluginSlot point={ExtensionPoints.WIDGET} />
+   ```
+
+## Environment Variables
+
+Salin `.env.example` menjadi `.env` dan sesuaikan:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
 ```
