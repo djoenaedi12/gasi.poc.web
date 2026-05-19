@@ -1,11 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowLeft, GalleryVerticalEnd } from "lucide-react"
 import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { Link } from "react-router"
 
+import { FormButton } from "@/components/molecules/form-button"
 import { FormInput } from "@/components/molecules/form-input"
-import { Button } from "@/components/ui/button"
 import {
     FieldDescription,
     FieldGroup,
@@ -28,7 +28,10 @@ function ForgotPasswordForm({
         },
     })
 
-    const username = form.watch("username")
+    const username = useWatch({
+        control: form.control,
+        name: "username",
+    })
 
     const onSubmit = () => {
         setIsSubmitted(true)
@@ -46,13 +49,13 @@ function ForgotPasswordForm({
                         </p>
                     </div>
 
-                    <Button
+                    <FormButton
                         type="button"
                         className="w-full"
                         onClick={() => setIsSubmitted(false)}
                     >
                         Try another username
-                    </Button>
+                    </FormButton>
 
                     <FieldDescription className="text-center">
                         Remember your password?{" "}
@@ -88,9 +91,13 @@ function ForgotPasswordForm({
                     required
                 />
 
-                <Button className="w-full" type="submit">
+                <FormButton
+                    className="w-full"
+                    loading={form.formState.isSubmitting}
+                    loadingText="Sending..."
+                >
                     Send reset instructions
-                </Button>
+                </FormButton>
 
                 <FieldDescription className="text-center">
                     Remember your password?{" "}

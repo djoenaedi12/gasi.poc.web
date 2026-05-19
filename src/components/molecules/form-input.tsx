@@ -9,7 +9,13 @@ import {
 } from "@/components/ui/field";
 import { FormFieldLabel } from "@/components/molecules/form-field-label";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from "@/components/ui/input-group";
+import { Spinner } from "@/components/ui/spinner";
 
 const defaultIconMap: Record<string, ReactNode> = {
     email: <Mail className="size-4 text-muted-foreground" />,
@@ -28,6 +34,7 @@ type FormInputProps<TFieldValues extends FieldValues> = {
     icon?: ReactNode | null;
     className?: string;
     inputClassName?: string;
+    loading?: boolean;
 } & Omit<ComponentProps<typeof Input>, "name" | "form" | "className">;
 
 export function FormInput<TFieldValues extends FieldValues>({
@@ -41,6 +48,7 @@ export function FormInput<TFieldValues extends FieldValues>({
     icon,
     className,
     inputClassName,
+    loading,
     type,
     ...inputProps
 }: FormInputProps<TFieldValues>) {
@@ -63,44 +71,50 @@ export function FormInput<TFieldValues extends FieldValues>({
                 labelAction={labelAction}
             />
 
-            {resolvedIcon || isPassword ? (
-                <div className="relative">
+            {resolvedIcon || isPassword || loading ? (
+                <InputGroup>
                     {resolvedIcon ? (
-                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <InputGroupAddon>
                             {resolvedIcon}
-                        </span>
+                        </InputGroupAddon>
                     ) : null}
 
-                    <Input
+                    <InputGroupInput
                         id={name}
                         type={inputType}
                         aria-invalid={Boolean(error)}
-                        className={cn(
-                            resolvedIcon && "pl-9",
-                            isPassword && "pr-10",
-                            inputClassName,
-                        )}
+                        className={inputClassName}
                         {...inputProps}
                         {...form.register(name)}
                     />
 
-                    {isPassword ? (
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword((value) => !value)}
-                            className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                            aria-label={
-                                showPassword ? "Hide password" : "Show password"
-                            }
-                        >
-                            {showPassword ? (
-                                <EyeOff className="size-4" />
-                            ) : (
-                                <Eye className="size-4" />
-                            )}
-                        </button>
+                    {loading || isPassword ? (
+                        <InputGroupAddon align="inline-end">
+                            {loading ? <Spinner /> : null}
+
+                            {isPassword ? (
+                                <InputGroupButton
+                                    type="button"
+                                    size="icon-xs"
+                                    onClick={() =>
+                                        setShowPassword((value) => !value)
+                                    }
+                                    aria-label={
+                                        showPassword
+                                            ? "Hide password"
+                                            : "Show password"
+                                    }
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="size-4" />
+                                    ) : (
+                                        <Eye className="size-4" />
+                                    )}
+                                </InputGroupButton>
+                            ) : null}
+                        </InputGroupAddon>
                     ) : null}
-                </div>
+                </InputGroup>
             ) : (
                 <Input
                     id={name}

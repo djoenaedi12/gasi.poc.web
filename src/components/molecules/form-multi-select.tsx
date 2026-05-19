@@ -36,6 +36,7 @@ type FormMultiSelectProps<TFieldValues extends FieldValues> = {
     placeholder?: string;
     description?: ReactNode;
     tooltip?: ReactNode;
+    labelAction?: ReactNode;
     required?: boolean;
     disabled?: boolean;
     /** Maximum number of items that can be selected */
@@ -51,6 +52,7 @@ export function FormMultiSelect<TFieldValues extends FieldValues>({
     placeholder = "Select items",
     description,
     tooltip,
+    labelAction,
     required,
     disabled,
     maxSelected,
@@ -66,6 +68,7 @@ export function FormMultiSelect<TFieldValues extends FieldValues>({
                 label={label}
                 required={required}
                 tooltip={tooltip}
+                labelAction={labelAction}
             />
 
             <Controller

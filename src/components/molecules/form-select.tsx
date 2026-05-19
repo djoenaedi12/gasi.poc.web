@@ -33,6 +33,7 @@ type FormSelectProps<TFieldValues extends FieldValues> = {
     placeholder?: string;
     description?: ReactNode;
     tooltip?: ReactNode;
+    labelAction?: ReactNode;
     required?: boolean;
     disabled?: boolean;
     className?: string;
@@ -46,6 +47,7 @@ export function FormSelect<TFieldValues extends FieldValues>({
     placeholder,
     description,
     tooltip,
+    labelAction,
     required,
     disabled,
     className,
@@ -59,6 +61,7 @@ export function FormSelect<TFieldValues extends FieldValues>({
                 label={label}
                 required={required}
                 tooltip={tooltip}
+                labelAction={labelAction}
             />
 
             <Controller

@@ -30,6 +30,7 @@ type FormDateTimePickerProps<TFieldValues extends FieldValues> = {
     label: string;
     description?: ReactNode;
     tooltip?: ReactNode;
+    labelAction?: ReactNode;
     placeholder?: string;
     /** date-fns format string for display, default "PPP HH:mm" */
     displayFormat?: string;
@@ -52,6 +53,7 @@ export function FormDateTimePicker<TFieldValues extends FieldValues>({
     label,
     description,
     tooltip,
+    labelAction,
     placeholder = "Pick date and time",
     displayFormat = "PPP HH:mm",
     disabled,
@@ -82,6 +84,7 @@ export function FormDateTimePicker<TFieldValues extends FieldValues>({
                 label={label}
                 required={required}
                 tooltip={tooltip}
+                labelAction={labelAction}
             />
 
             <Controller

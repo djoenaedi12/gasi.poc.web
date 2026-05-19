@@ -28,6 +28,7 @@ type FormTimePickerProps<TFieldValues extends FieldValues> = {
     label: string;
     description?: ReactNode;
     tooltip?: ReactNode;
+    labelAction?: ReactNode;
     placeholder?: string;
     disabled?: boolean;
     required?: boolean;
@@ -46,6 +47,7 @@ export function FormTimePicker<TFieldValues extends FieldValues>({
     label,
     description,
     tooltip,
+    labelAction,
     placeholder = "Pick a time",
     disabled,
     required,
@@ -64,6 +66,7 @@ export function FormTimePicker<TFieldValues extends FieldValues>({
                 label={label}
                 required={required}
                 tooltip={tooltip}
+                labelAction={labelAction}
             />
 
             <Controller

@@ -25,6 +25,7 @@ type FormLookupPickerBaseProps<TFieldValues extends FieldValues> = {
     options: LookupOption[];
     description?: ReactNode;
     tooltip?: ReactNode;
+    labelAction?: ReactNode;
     placeholder?: string;
     searchPlaceholder?: string;
     emptyMessage?: string;
@@ -57,6 +58,7 @@ export function FormLookupPicker<TFieldValues extends FieldValues>(
         options,
         description,
         tooltip,
+        labelAction,
         placeholder,
         searchPlaceholder,
         emptyMessage,
@@ -75,6 +77,7 @@ export function FormLookupPicker<TFieldValues extends FieldValues>(
                 label={label}
                 required={required}
                 tooltip={tooltip}
+                labelAction={labelAction}
             />
 
             <Controller
@@ -93,6 +96,7 @@ export function FormLookupPicker<TFieldValues extends FieldValues>(
                             searchPlaceholder={searchPlaceholder}
                             emptyMessage={emptyMessage}
                             disabled={disabled}
+                            aria-invalid={Boolean(error)}
                             icon={<Search className="size-4 text-muted-foreground" />}
                         />
                     ) : (
@@ -106,6 +110,7 @@ export function FormLookupPicker<TFieldValues extends FieldValues>(
                             searchPlaceholder={searchPlaceholder}
                             emptyMessage={emptyMessage}
                             disabled={disabled}
+                            aria-invalid={Boolean(error)}
                             icon={<Search className="size-4 text-muted-foreground" />}
                         />
                     )

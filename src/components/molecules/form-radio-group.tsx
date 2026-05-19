@@ -30,6 +30,7 @@ type FormRadioGroupProps<TFieldValues extends FieldValues> = {
     options: RadioOption[];
     description?: ReactNode;
     tooltip?: ReactNode;
+    labelAction?: ReactNode;
     required?: boolean;
     disabled?: boolean;
     className?: string;
@@ -43,6 +44,7 @@ export function FormRadioGroup<TFieldValues extends FieldValues>({
     options,
     description,
     tooltip,
+    labelAction,
     required,
     disabled,
     className,
@@ -56,6 +58,7 @@ export function FormRadioGroup<TFieldValues extends FieldValues>({
                 label={label}
                 required={required}
                 tooltip={tooltip}
+                labelAction={labelAction}
             />
 
             <Controller

@@ -1,6 +1,6 @@
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import { X } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 import { DataTable } from "@/components/datatable/data-table";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ type LookupPickerBaseProps = {
     icon?: ReactNode;
     disabled?: boolean;
     className?: string;
+    "aria-invalid"?: boolean;
 };
 
 type SingleLookupPickerProps = LookupPickerBaseProps & {
@@ -70,15 +71,16 @@ export function LookupPicker(props: LookupPickerProps) {
         selectedValues.includes(option.value),
     );
 
-    useEffect(() => {
-        if (!open) {
-            return;
+    const getSelectedRowSelection = () =>
+        Object.fromEntries(selectedValues.map((value) => [value, true]));
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            setRowSelection(getSelectedRowSelection());
         }
 
-        setRowSelection(
-            Object.fromEntries(selectedValues.map((value) => [value, true])),
-        );
-    }, [open, selectedValues.join("|")]);
+        setOpen(nextOpen);
+    };
 
     const triggerLabel = props.multiple
         ? selectedOptions.length === 0
@@ -138,8 +140,9 @@ export function LookupPicker(props: LookupPickerProps) {
                     type="button"
                     variant="outline"
                     disabled={disabled}
+                    aria-invalid={props["aria-invalid"]}
                     className="w-full justify-start"
-                    onClick={() => setOpen(true)}
+                    onClick={() => handleOpenChange(true)}
                 >
                     {icon}
                     <span className="min-w-0 flex-1 truncate text-left">
@@ -169,7 +172,7 @@ export function LookupPicker(props: LookupPickerProps) {
                 </Button>
             </div>
 
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{title}</DialogTitle>

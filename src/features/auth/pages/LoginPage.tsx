@@ -3,6 +3,7 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router"
 
+import { FormButton } from "@/components/molecules/form-button"
 import { FormInput } from "@/components/molecules/form-input"
 import { Button } from "@/components/ui/button"
 import {
@@ -81,9 +82,13 @@ function LoginForm({
                     }
                 />
 
-                <Button className="w-full" type="submit">
+                <FormButton
+                    className="w-full"
+                    loading={form.formState.isSubmitting}
+                    loadingText="Logging in..."
+                >
                     Login
-                </Button>
+                </FormButton>
 
                 <FieldSeparator>Or continue with</FieldSeparator>
 
