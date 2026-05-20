@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
-import { DataTable, ServerDataTable } from "../datatable/data-table";
+import { DataTable, ServerDataTable } from "../datatable/DataTable";
 import { Button } from "../ui/button";
 import {
     Dialog,

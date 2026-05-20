@@ -4,41 +4,42 @@ import {
     type FieldValues,
     type UseFormReturn,
 } from "react-hook-form";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-import { FormFieldLabel } from "./form-field-label";
-import { Checkbox } from "../ui/checkbox";
+import { FormFieldLabel } from "./FormFieldLabel";
 import {
     Field,
     FieldContent,
     FieldDescription,
     FieldError,
 } from "../ui/field";
+import { Switch } from "../ui/switch";
 import { cn } from "../../lib/utils";
 
-type FormCheckboxProps<TFieldValues extends FieldValues> = {
+type FormSwitchProps<TFieldValues extends FieldValues> = {
     form: UseFormReturn<TFieldValues>;
     name: FieldPath<TFieldValues>;
     label: string;
     description?: ReactNode;
     tooltip?: ReactNode;
-    labelAction?: ReactNode;
     required?: boolean;
-    disabled?: boolean;
     className?: string;
-};
+} & Omit<
+    ComponentProps<typeof Switch>,
+    "checked" | "defaultChecked" | "onCheckedChange" | "name" | "form"
+>;
 
-export function FormCheckbox<TFieldValues extends FieldValues>({
+export function FormSwitch<TFieldValues extends FieldValues>({
     form,
     name,
     label,
     description,
     tooltip,
-    labelAction,
     required,
-    disabled,
     className,
-}: FormCheckboxProps<TFieldValues>) {
+    disabled,
+    ...switchProps
+}: FormSwitchProps<TFieldValues>) {
     const error = form.formState.errors[name];
 
     return (
@@ -48,7 +49,7 @@ export function FormCheckbox<TFieldValues extends FieldValues>({
                 name={name}
                 render={({ field }) => (
                     <div className="flex items-start gap-3">
-                        <Checkbox
+                        <Switch
                             id={name}
                             checked={Boolean(field.value)}
                             onCheckedChange={(checked) =>
@@ -56,6 +57,7 @@ export function FormCheckbox<TFieldValues extends FieldValues>({
                             }
                             disabled={disabled}
                             aria-invalid={Boolean(error)}
+                            {...switchProps}
                         />
 
                         <FieldContent>
@@ -64,7 +66,6 @@ export function FormCheckbox<TFieldValues extends FieldValues>({
                                 label={label}
                                 required={required}
                                 tooltip={tooltip}
-                                labelAction={labelAction}
                                 className={cn(
                                     "cursor-pointer",
                                     disabled && "cursor-not-allowed opacity-70",

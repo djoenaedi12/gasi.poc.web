@@ -55,6 +55,25 @@ export function buildSearchFilter(search: string, fields?: string[]) {
     } satisfies GenericFilter;
 }
 
+export function combineFilters(
+    ...filters: Array<GenericFilter | undefined>
+): GenericFilter | undefined {
+    const activeFilters = filters.filter(Boolean) as GenericFilter[];
+
+    if (!activeFilters.length) {
+        return undefined;
+    }
+
+    if (activeFilters.length === 1) {
+        return activeFilters[0];
+    }
+
+    return {
+        type: "and",
+        filters: activeFilters,
+    };
+}
+
 export function getColumnFieldIds<TData, TValue>(
     columns: ColumnDef<TData, TValue>[],
 ) {

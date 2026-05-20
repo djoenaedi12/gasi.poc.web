@@ -14,12 +14,12 @@ core-ui/
     │   ├── organisms/   # Layout components (sidebar, header)
     │   └── datatable/   # Data table components
     ├── hooks/
-    │   └── use-mobile.ts
+    │   └── useMobile.ts
     ├── lib/
     │   ├── utils.ts          # cn() utility
     │   ├── axios.ts          # Axios instance + interceptors
-    │   ├── base-service.ts   # createBaseService factory
-    │   ├── base-hooks.ts     # createBaseHooks factory (TanStack Query)
+    │   ├── baseService.ts    # createBaseService factory
+    │   ├── baseHooks.ts      # createBaseHooks factory (TanStack Query)
     │   ├── date.ts           # Date utilities
     │   └── time.ts           # Time utilities
     ├── types/

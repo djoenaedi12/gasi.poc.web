@@ -1,11 +1,11 @@
-export { ExtensionPoints } from './ExtensionPoints';
-export type { ExtensionPoint } from './ExtensionPoints';
-export { Actions, resolvePermission } from './PluginDefinition';
+export { ExtensionPoints } from './types/extensionPoints.types';
+export type { ExtensionPoint } from './types/extensionPoints.types';
+export { Actions, resolvePermission } from './types/pluginDefinition.types';
 export type {
   Action,
   RouteDefinition,
   AuthGuardExtension,
   PluginDefinition,
   PluginExtension,
-} from './PluginDefinition';
-export { PluginRegistry, pluginRegistry } from './PluginRegistry';
+} from './types/pluginDefinition.types';
+export { PluginRegistry, pluginRegistry } from './registry/pluginRegistry';

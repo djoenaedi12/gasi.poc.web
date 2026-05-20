@@ -3,7 +3,7 @@
 import { Check } from "lucide-react";
 import type { ElementType } from "react";
 
-import { FormButton } from "./form-button";
+import { FormButton } from "./FormButton";
 import { cn } from "../../lib/utils";
 
 export type StepperItem = {

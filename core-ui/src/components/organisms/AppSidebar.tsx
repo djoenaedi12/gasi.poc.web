@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, useLocation } from 'react-router';
-import { LogOut, User, ChevronsUpDown, EllipsisVertical } from 'lucide-react';
+import { LogOut, User, EllipsisVertical } from 'lucide-react';
 import { useAppStore } from '@gasi/core-starter';
 
 import { Avatar, AvatarFallback }        from '../ui/avatar';

@@ -7,7 +7,7 @@ import type { ExtensionPoint, PluginExtension } from '@gasi/core-api';
  * Otomatis re-render ketika plugin di-start atau di-stop.
  *
  * @example
- * const widgets = useExtensions(ExtensionPoints.WIDGET);
+ * const routes = useExtensions(ExtensionPoints.ROUTE);
  */
 export function useExtensions(point: ExtensionPoint): PluginExtension[] {
   const [extensions, setExtensions] = useState<PluginExtension[]>(

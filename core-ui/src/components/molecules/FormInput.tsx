@@ -7,7 +7,7 @@ import {
     FieldDescription,
     FieldError,
 } from "../ui/field";
-import { FormFieldLabel } from "./form-field-label";
+import { FormFieldLabel } from "./FormFieldLabel";
 import { Input } from "../ui/input";
 import {
     InputGroup,

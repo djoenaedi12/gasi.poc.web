@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL:         import.meta.env.VITE_API_BASE_URL ?? '',
+  baseURL:         import.meta.env.VITE_API_BASE_URL ?? '/platform-app',
   headers:         { 'Content-Type': 'application/json' },
   timeout:         15000,
   withCredentials: true, // httpOnly cookie otomatis ikut di setiap request

@@ -29,7 +29,7 @@ platform-app/
 │   │   └── datatable/    # Data table components
 │   ├── features/         # Feature modules (auth, dashboard, dll)
 │   ├── layouts/          # Page layouts
-│   ├── lib/              # Utilities (axios, base-hooks, base-service)
+│   ├── lib/              # Utilities (axios, baseHooks, baseService)
 │   ├── routes/           # Route definitions
 │   ├── stores/           # Zustand stores
 │   ├── types/            # Global TypeScript types
@@ -61,15 +61,12 @@ npm run dev
      '/plugins/nama-plugin.umd.js',
    ]);
    ```
-4. Gunakan `PluginSlot` di halaman yang sesuai:
-   ```tsx
-   <PluginSlot point={ExtensionPoints.WIDGET} />
-   ```
+4. Route dari plugin akan dibaca oleh `AppRoutes` melalui `useExtensions(ExtensionPoints.ROUTE)`.
 
 ## Environment Variables
 
 Salin `.env.example` menjadi `.env` dan sesuaikan:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_BASE_URL=/platform-app
 ```

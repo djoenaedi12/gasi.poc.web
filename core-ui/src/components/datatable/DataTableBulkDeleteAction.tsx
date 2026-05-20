@@ -1,6 +1,6 @@
 import { Trash2 } from "lucide-react";
 
-import { ConfirmDialog } from "../molecules/confirm-dialog";
+import { ConfirmDialog } from "../molecules/ConfirmDialog";
 import { Button } from "../ui/button";
 
 type DataTableBulkDeleteActionProps<TData> = {

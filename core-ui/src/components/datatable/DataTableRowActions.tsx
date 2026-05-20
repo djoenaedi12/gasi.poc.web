@@ -2,7 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Edit, Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 
-import { ConfirmDialog } from "../molecules/confirm-dialog";
+import { ConfirmDialog } from "../molecules/ConfirmDialog";
 import { Button } from "../ui/button";
 import {
     DropdownMenu,

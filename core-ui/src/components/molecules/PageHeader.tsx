@@ -1,4 +1,5 @@
 import { ChevronRight, Home } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router";
 
 import { cn } from "../../lib/utils";
@@ -21,6 +22,14 @@ type PageHeaderProps = {
     title: string;
     description?: string;
     className?: string;
+    breadcrumbs?: BreadcrumbItem[];
+    breadcrumbLabels?: Record<string, string | undefined>;
+    actions?: ReactNode;
+};
+
+type BreadcrumbItem = {
+    label: string;
+    href?: string;
 };
 
 function formatSegment(segment: string) {
@@ -37,9 +46,16 @@ export function PageHeader({
     title,
     description,
     className,
+    breadcrumbs,
+    breadcrumbLabels,
+    actions,
 }: PageHeaderProps) {
     const location = useLocation();
     const segments = location.pathname.split("/").filter(Boolean);
+    const breadcrumbItems = breadcrumbs ?? segments.map((segment, index) => ({
+        label: breadcrumbLabels?.[segment] ?? formatSegment(segment),
+        href: `/${segments.slice(0, index + 1).join("/")}`,
+    }));
 
     return (
         <section
@@ -60,23 +76,23 @@ export function PageHeader({
                     <span>Dashboard</span>
                 </Link>
 
-                {segments.map((segment, index) => {
-                    const href = `/${segments.slice(0, index + 1).join("/")}`;
-                    const isLast = index === segments.length - 1;
+                {breadcrumbItems.map((item, index) => {
+                    const isLast = index === breadcrumbItems.length - 1;
+                    const key = item.href ?? `${item.label}-${index}`;
 
                     return (
-                        <div key={href} className="flex items-center gap-1">
+                        <div key={key} className="flex items-center gap-1">
                             <ChevronRight className="size-4" />
-                            {isLast ? (
+                            {isLast || !item.href ? (
                                 <span className="font-medium text-foreground">
-                                    {formatSegment(segment)}
+                                    {item.label}
                                 </span>
                             ) : (
                                 <Link
-                                    to={href}
+                                    to={item.href}
                                     className="rounded-md transition hover:text-primary hover:underline"
                                 >
-                                    {formatSegment(segment)}
+                                    {item.label}
                                 </Link>
                             )}
                         </div>
@@ -84,14 +100,22 @@ export function PageHeader({
                 })}
             </nav>
 
-            <div className="min-w-0">
-                <h1 className="text-2xl font-semibold tracking-normal text-foreground">
-                    {title}
-                </h1>
-                {description ? (
-                    <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                        {description}
-                    </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="text-2xl font-semibold tracking-normal text-foreground">
+                        {title}
+                    </h1>
+                    {description ? (
+                        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                            {description}
+                        </p>
+                    ) : null}
+                </div>
+
+                {actions ? (
+                    <div className="flex shrink-0 items-center gap-2">
+                        {actions}
+                    </div>
                 ) : null}
             </div>
         </section>

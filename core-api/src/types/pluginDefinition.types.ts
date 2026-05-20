@@ -1,4 +1,4 @@
-import type { ExtensionPoint } from './ExtensionPoints';
+import type { ExtensionPoint } from './extensionPoints.types';
 import type { ComponentType } from 'react';
 
 /**
@@ -6,11 +6,12 @@ import type { ComponentType } from 'react';
  * Plugin cukup define resource-nya, action diambil dari sini.
  */
 export const Actions = {
-  READ:   'read',
+  READ: 'read',
   CREATE: 'create',
   UPDATE: 'update',
   DELETE: 'delete',
-  EXPORT: 'export',
+  DOWNLOAD: 'download',
+  UPLOAD: 'upload',
 } as const;
 
 export type Action = typeof Actions[keyof typeof Actions];

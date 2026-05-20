@@ -8,7 +8,7 @@ import {
     type UseFormReturn,
 } from "react-hook-form";
 
-import { FormFieldLabel } from "./form-field-label";
+import { FormFieldLabel } from "./FormFieldLabel";
 import {
     Field,
     FieldDescription,
@@ -17,7 +17,7 @@ import {
 import {
     LookupPicker,
     type LookupOption,
-} from "./lookup-picker";
+} from "./LookupPicker";
 import type { GenericFilter, PageResult, SearchRequest } from "../../types/api.types";
 
 type FormLookupPickerBaseProps<

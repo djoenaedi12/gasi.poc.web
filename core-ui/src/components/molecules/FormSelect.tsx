@@ -6,7 +6,7 @@ import {
 } from "react-hook-form";
 import type { ReactNode } from "react";
 
-import { FormFieldLabel } from "./form-field-label";
+import { FormFieldLabel } from "./FormFieldLabel";
 import {
     Field,
     FieldDescription,

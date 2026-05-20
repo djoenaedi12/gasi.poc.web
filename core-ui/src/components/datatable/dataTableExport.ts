@@ -3,7 +3,7 @@ import type { Table } from "@tanstack/react-table";
 import {
     getColumnLabel,
     type DataTableColumn,
-} from "./data-table-utils";
+} from "./dataTableUtils";
 
 function getExportValue(value: unknown) {
     if (value === null || value === undefined) {

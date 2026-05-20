@@ -1,5 +1,5 @@
-import type { PluginDefinition, PluginExtension } from './PluginDefinition';
-import type { ExtensionPoint } from './ExtensionPoints';
+import type { PluginDefinition, PluginExtension } from '../types/pluginDefinition.types';
+import type { ExtensionPoint } from '../types/extensionPoints.types';
 
 type PluginState = 'registered' | 'started' | 'stopped';
 

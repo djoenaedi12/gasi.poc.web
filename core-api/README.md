@@ -7,9 +7,11 @@ Kontrak dan definisi inti untuk plugin system.
 ```
 core-api/
 └── src/
-    ├── ExtensionPoints.ts   # ROUTE, AUTH_GUARD
-    ├── PluginDefinition.ts  # PluginDefinition, RouteDefinition, Actions, resolvePermission
-    ├── PluginRegistry.ts    # PluginRegistry class + singleton pluginRegistry
+    ├── registry/
+    │   └── pluginRegistry.ts          # PluginRegistry class + singleton pluginRegistry
+    ├── types/
+    │   ├── extensionPoints.types.ts   # ROUTE, AUTH_GUARD
+    │   └── pluginDefinition.types.ts  # PluginDefinition, RouteDefinition, Actions, resolvePermission
     └── index.ts
 ```
 
@@ -35,7 +37,8 @@ Actions.READ    // 'read'
 Actions.CREATE  // 'create'
 Actions.UPDATE  // 'update'
 Actions.DELETE  // 'delete'
-Actions.EXPORT  // 'export'
+Actions.DOWNLOAD // 'download'
+Actions.UPLOAD   // 'upload'
 ```
 
 ### RouteDefinition

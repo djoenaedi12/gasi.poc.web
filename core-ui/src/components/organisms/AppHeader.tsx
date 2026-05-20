@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Moon, Search, Sun } from "lucide-react";
 
-import { AppNotificationMenu } from "./app-notification-menu";
+import { AppNotificationMenu } from "./AppNotificationMenu";
 import { Button } from "../ui/button";
 import {
     DropdownMenu,
@@ -29,7 +29,7 @@ export function AppHeader() {
     const selectedLanguage = languages.find((item) => item.value === language);
 
     return (
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-white px-4 dark:bg-background">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b bg-white px-4 dark:bg-background">
             <SidebarTrigger />
 
             <div className="relative w-full max-w-sm md:max-w-md">

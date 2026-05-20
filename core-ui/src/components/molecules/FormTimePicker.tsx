@@ -1,5 +1,4 @@
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { Clock } from "lucide-react";
 import {
     Controller,
     type FieldPath,
@@ -8,9 +7,8 @@ import {
 } from "react-hook-form";
 import type { ReactNode } from "react";
 
-import { FormFieldLabel } from "./form-field-label";
+import { FormFieldLabel } from "./FormFieldLabel";
 import { Button } from "../ui/button";
-import { Calendar } from "../ui/calendar";
 import {
     Field,
     FieldDescription,
@@ -21,8 +19,10 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "../ui/popover";
+import { ScrollArea } from "../ui/scroll-area";
+import { generateTimeSlots, getCurrentTimeInRange } from "../../lib/time";
 
-type FormDatePickerProps<TFieldValues extends FieldValues> = {
+type FormTimePickerProps<TFieldValues extends FieldValues> = {
     form: UseFormReturn<TFieldValues>;
     name: FieldPath<TFieldValues>;
     label: string;
@@ -30,30 +30,34 @@ type FormDatePickerProps<TFieldValues extends FieldValues> = {
     tooltip?: ReactNode;
     labelAction?: ReactNode;
     placeholder?: string;
-    /** date-fns format string, default "PPP" (e.g. "June 15, 2025") */
-    displayFormat?: string;
     disabled?: boolean;
     required?: boolean;
-    /** Disable specific dates, e.g. (date) => date > new Date() */
-    disabledDates?: (date: Date) => boolean;
+    /** Time step in minutes, default 15 */
+    minuteStep?: number;
+    /** Minimum time, e.g. "08:00" */
+    minTime?: string;
+    /** Maximum time, e.g. "17:00" */
+    maxTime?: string;
     className?: string;
 };
 
-export function FormDatePicker<TFieldValues extends FieldValues>({
+export function FormTimePicker<TFieldValues extends FieldValues>({
     form,
     name,
     label,
     description,
     tooltip,
     labelAction,
-    placeholder = "Pick a date",
-    displayFormat = "PPP",
+    placeholder = "Pick a time",
     disabled,
     required,
-    disabledDates,
+    minuteStep = 15,
+    minTime,
+    maxTime,
     className,
-}: FormDatePickerProps<TFieldValues>) {
+}: FormTimePickerProps<TFieldValues>) {
     const error = form.formState.errors[name];
+    const timeSlots = generateTimeSlots(minuteStep, minTime, maxTime);
 
     return (
         <Field className={className}>
@@ -69,9 +73,7 @@ export function FormDatePicker<TFieldValues extends FieldValues>({
                 control={form.control}
                 name={name}
                 render={({ field }) => {
-                    const dateValue = field.value
-                        ? new Date(field.value as string | Date)
-                        : undefined;
+                    const selectedTime = (field.value as string) ?? "";
 
                     return (
                         <Popover>
@@ -82,33 +84,42 @@ export function FormDatePicker<TFieldValues extends FieldValues>({
                                         type="button"
                                         variant="outline"
                                         disabled={disabled}
-                                        data-empty={!dateValue}
+                                        data-empty={!selectedTime}
                                         aria-invalid={Boolean(error)}
                                         className="w-full justify-start text-left font-normal data-[empty=true]:text-muted-foreground"
                                     />
                                 }
                             >
-                                <CalendarIcon className="size-4" />
-                                {dateValue
-                                    ? format(dateValue, displayFormat)
-                                    : placeholder}
+                                <Clock className="size-4" />
+                                {selectedTime || placeholder}
                             </PopoverTrigger>
 
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={dateValue}
-                                    onSelect={(date) => {
-                                        field.onChange(
-                                            date
-                                                ? format(date, "yyyy-MM-dd")
-                                                : undefined,
-                                        );
-                                    }}
-                                    disabled={disabledDates}
-                                    defaultMonth={dateValue}
-                                    captionLayout="dropdown"
-                                />
+                            <PopoverContent
+                                className="w-[var(--popover-trigger-width)] p-0"
+                                align="start"
+                            >
+                                <ScrollArea className="h-60 p-1">
+                                    <div className="grid gap-0.5">
+                                        {timeSlots.map((slot) => (
+                                            <Button
+                                                key={slot}
+                                                type="button"
+                                                variant={
+                                                    selectedTime === slot
+                                                        ? "default"
+                                                        : "ghost"
+                                                }
+                                                size="sm"
+                                                className="w-full justify-start font-mono"
+                                                onClick={() => {
+                                                    field.onChange(slot);
+                                                }}
+                                            >
+                                                {slot}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
 
                                 <div className="flex items-center justify-between border-t p-2">
                                     <Button
@@ -117,18 +128,22 @@ export function FormDatePicker<TFieldValues extends FieldValues>({
                                         size="sm"
                                         onClick={() => {
                                             field.onChange(
-                                                format(new Date(), "yyyy-MM-dd"),
+                                                getCurrentTimeInRange(
+                                                    minuteStep,
+                                                    minTime,
+                                                    maxTime,
+                                                ),
                                             );
                                         }}
                                     >
-                                        Today
+                                        Now
                                     </Button>
 
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="sm"
-                                        disabled={!dateValue}
+                                        disabled={!selectedTime}
                                         onClick={() => {
                                             field.onChange(undefined);
                                         }}

@@ -8,7 +8,7 @@ import {
     type UseFormReturn,
 } from "react-hook-form";
 
-import { FormFieldLabel } from "./form-field-label";
+import { FormFieldLabel } from "./FormFieldLabel";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
 import {

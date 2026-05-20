@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 
-import { Stepper, type StepperItem } from "./stepper";
+import { Stepper, type StepperItem } from "./Stepper";
 import { cn } from "../../lib/utils";
 
 type StepperWizardProps = {

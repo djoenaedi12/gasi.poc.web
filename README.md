@@ -7,7 +7,7 @@ Plugin architecture untuk React + Vite menggunakan npm workspaces.
 ```
 gasi.poc.web/
 ├── core-api/          # Kontrak plugin (ExtensionPoints, PluginRegistry, interfaces)
-├── core-starter/      # Plugin hooks & loader (useExtensions, PluginSlot, PluginLoader)
+├── core-starter/      # Plugin hooks, loader, dan app store
 ├── core-ui/           # Shared UI components, lib, dan types
 ├── platform-app/      # Aplikasi utama React + Vite + Shadcn
 └── plugins/
@@ -28,6 +28,21 @@ platform-app  ←── plugin-*
 
 Plugin yang hanya butuh registry → cukup depend ke `core-api`.
 Plugin yang butuh UI component → depend ke `core-ui`.
+
+## File naming
+
+| Kategori | Konvensi | Contoh |
+| --- | --- | --- |
+| Shadcn UI (`components/ui/`) | kebab-case | `button.tsx`, `dropdown-menu.tsx` |
+| Components | PascalCase | `DepartmentForm.tsx`, `ConfirmDialog.tsx` |
+| Pages | PascalCase | `DepartmentListPage.tsx`, `DepartmentEditPage.tsx` |
+| Hooks | camelCase + prefix `use` | `useDepartment.ts`, `useMobile.ts` |
+| Services | camelCase | `departmentService.ts` |
+| Schemas | camelCase | `departmentCreateSchema.ts` |
+| Types | camelCase + suffix `.types` | `department.types.ts`, `api.types.ts` |
+| Utilities / Lib | camelCase | `baseService.ts`, `utils.ts`, `date.ts` |
+| Routes | lowercase | `routes.tsx` |
+| Config files | lowercase / kebab-case | `vite.config.ts`, `tsconfig.json` |
 
 ## Development
 

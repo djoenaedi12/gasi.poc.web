@@ -9,7 +9,7 @@ import {
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { FormFieldLabel } from "./form-field-label";
+import { FormFieldLabel } from "./FormFieldLabel";
 import {
     Field,
     FieldDescription,

@@ -11,9 +11,9 @@ core-starter/
     ├── hooks/
     │   ├── useExtensions.ts   # Hook untuk mengambil extension aktif pada suatu point
     │   └── usePlugins.ts      # Hook untuk mengambil daftar semua plugin + state
-    ├── components/
-    │   └── PluginSlot.tsx     # Komponen untuk me-render extension di UI
-    ├── PluginLoader.ts        # Utility untuk load plugin UMD dari URL
+    ├── pluginLoader.ts        # Utility untuk load plugin UMD dari URL
+    ├── stores/
+    │   └── useAppStore.ts     # Global session store
     └── index.ts               # Public exports
 ```
 
@@ -29,15 +29,10 @@ import { useExtensions } from '@gasi/core-starter';
 import { ExtensionPoints } from '@gasi/core-api';
 
 function Dashboard() {
-  const widgets = useExtensions(ExtensionPoints.WIDGET);
+  const routeExtensions = useExtensions(ExtensionPoints.ROUTE);
 
   return (
-    <div>
-      {widgets.map((ext, i) => {
-        const Widget = ext.component!;
-        return <Widget key={i} />;
-      })}
-    </div>
+    <pre>{JSON.stringify(routeExtensions, null, 2)}</pre>
   );
 }
 ```
@@ -58,27 +53,6 @@ function PluginManager() {
         <li key={p.id}>{p.name} — {p.state}</li>
       ))}
     </ul>
-  );
-}
-```
-
-### PluginSlot
-
-Komponen deklaratif untuk me-render semua plugin pada suatu extension point.
-
-```tsx
-import { PluginSlot } from '@gasi/core-starter';
-import { ExtensionPoints } from '@gasi/core-api';
-
-function Dashboard() {
-  return (
-    <div>
-      <h1>Dashboard</h1>
-      <PluginSlot
-        point={ExtensionPoints.WIDGET}
-        fallback={<p>Tidak ada widget aktif</p>}
-      />
-    </div>
   );
 }
 ```

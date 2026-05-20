@@ -45,14 +45,19 @@ import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import {
     DropdownMenu,
-    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
+import {
+    Popover,
+    PopoverContent,
+    PopoverHeader,
+    PopoverTitle,
+    PopoverTrigger,
+} from "../ui/popover";
 import {
     Table,
     TableBody,
@@ -61,10 +66,11 @@ import {
     TableHeader,
     TableRow,
 } from "../ui/table";
-import { exportVisibleTableRowsToCsv } from "./data-table-export";
-import { DataTableSortableHeader } from "./data-table-sortable-header";
+import { exportVisibleTableRowsToCsv } from "./dataTableExport";
+import { DataTableSortableHeader } from "./DataTableSortableHeader";
 import {
     buildSearchFilter,
+    combineFilters,
     getColumnFieldIds,
     getColumnClassName,
     getColumnLabel,
@@ -72,7 +78,7 @@ import {
     getInitialColumnVisibility,
     type ColumnVisibilityState,
     type DataTableColumn,
-} from "./data-table-utils";
+} from "./dataTableUtils";
 
 function renderHeader<TData>(header: Header<TData, unknown>) {
     if (header.isPlaceholder) {
@@ -123,12 +129,14 @@ type DataTableProps<TData, TValue> = {
     searchValue?: string;
     onSearchChange?: (value: string) => void;
     toolbar?: ReactNode;
+    moreFilter?: ReactNode;
     toolbarEnd?: ReactNode;
     actions?: DataTableAction[];
     primaryAction?: DataTableAction;
     enableColumnSettings?: boolean;
     columnPreferenceKey?: string;
     initialColumnVisibility?: ColumnVisibilityState;
+    defaultVisibleColumns?: string[];
     onColumnVisibilityChange?: (visibility: ColumnVisibilityState) => void;
     enableCsvExport?: boolean;
     csvFileName?: string;
@@ -162,6 +170,8 @@ type ServerDataTableProps<TData, TValue> = Omit<
     ) => UseQueryResult<PageResult<TData> | undefined, unknown>;
     searchFields?: string[];
     buildFilter?: (search: string) => GenericFilter | undefined;
+    moreFilter?: ReactNode;
+    advancedFilter?: GenericFilter;
     defaultSearchValue?: string;
     defaultVisibleColumns?: string[];
     loadingTitle?: string;
@@ -173,6 +183,8 @@ export function ServerDataTable<TData, TValue>({
     pageQuery,
     searchFields,
     buildFilter,
+    moreFilter,
+    advancedFilter,
     columnPreferenceKey,
     defaultSearchValue = "",
     defaultPageSize = 10,
@@ -198,12 +210,13 @@ export function ServerDataTable<TData, TValue>({
     }, [columnVisibility, columns]);
 
     const searchRequest = useMemo<SearchRequest>(() => {
-        const filter = buildFilter
+        const searchFilter = buildFilter
             ? buildFilter(search)
             : buildSearchFilter(search, searchFields);
+        const filter = combineFilters(searchFilter, advancedFilter);
 
         return { filter, sorts, fields, page, size: pageSize };
-    }, [buildFilter, fields, page, pageSize, search, searchFields, sorts]);
+    }, [advancedFilter, buildFilter, fields, page, pageSize, search, searchFields, sorts]);
 
     const query = pageQuery(searchRequest);
     const pageResult = query.data;
@@ -237,11 +250,13 @@ export function ServerDataTable<TData, TValue>({
             onSortingChange={handleSortingChange}
             searchValue={search}
             onSearchChange={handleSearchChange}
+            moreFilter={moreFilter}
             defaultPageSize={defaultPageSize}
             emptyTitle={query.isLoading ? loadingTitle : emptyTitle}
             emptyDescription={query.isError ? errorDescription : emptyDescription}
             columnPreferenceKey={columnPreferenceKey}
             initialColumnVisibility={columnVisibility}
+            defaultVisibleColumns={defaultVisibleColumns}
             onColumnVisibilityChange={setColumnVisibility}
         />
     );
@@ -266,12 +281,14 @@ export function DataTable<TData, TValue>({
     searchValue,
     onSearchChange,
     toolbar,
+    moreFilter,
     toolbarEnd,
     actions = [],
     primaryAction,
     enableColumnSettings = false,
     columnPreferenceKey,
     initialColumnVisibility,
+    defaultVisibleColumns,
     onColumnVisibilityChange,
     enableCsvExport = false,
     csvFileName = "table-export.csv",
@@ -457,11 +474,43 @@ export function DataTable<TData, TValue>({
         .rows.map((row) => row.original);
 
     const resetColumnVisibility = () => {
-        setColumnVisibility({});
+        const defaultVisibility = getInitialColumnVisibility(
+            columns,
+            defaultVisibleColumns,
+        );
+
+        setColumnVisibility(defaultVisibility);
+        onColumnVisibilityChange?.(defaultVisibility);
 
         if (columnPreferenceKey) {
             localStorage.removeItem(`${columnPreferenceKey}:column-visibility`);
         }
+    };
+
+    const hideableColumns = table
+        .getAllLeafColumns()
+        .filter((column) => column.getCanHide());
+
+    const visibleHideableColumnCount = hideableColumns.filter((column) =>
+        column.getIsVisible(),
+    ).length;
+    const areAllHideableColumnsVisible =
+        hideableColumns.length > 0 &&
+        visibleHideableColumnCount === hideableColumns.length;
+    const areSomeHideableColumnsVisible =
+        visibleHideableColumnCount > 0 &&
+        visibleHideableColumnCount < hideableColumns.length;
+
+    const toggleAllColumns = (checked: boolean) => {
+        handleColumnVisibilityChange((current) => {
+            const nextVisibility = { ...current };
+
+            hideableColumns.forEach((column) => {
+                nextVisibility[column.id] = checked;
+            });
+
+            return nextVisibility;
+        });
     };
 
     const visibleActions = actions.filter((action) => !action.hidden);
@@ -469,40 +518,68 @@ export function DataTable<TData, TValue>({
         primaryAction && !primaryAction.hidden ? primaryAction : undefined;
 
     const columnSettingsAction = enableColumnSettings ? (
-        <DropdownMenu>
-            <DropdownMenuTrigger
-                type="button"
-                className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-2.5 text-sm font-medium transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        <Popover>
+            <PopoverTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Column settings"
+                        aria-label="Column settings"
+                    />
+                }
             >
                 <Settings2 className="size-4" />
-                <span className="sr-only">Column settings</span>
-            </DropdownMenuTrigger>
+            </PopoverTrigger>
 
-            <DropdownMenuContent align="end" sideOffset={6} className="w-56">
-                <DropdownMenuGroup>
-                    {table
-                        .getAllLeafColumns()
-                        .filter((column) => column.getCanHide())
-                        .map((column) => (
-                            <DropdownMenuCheckboxItem
-                                key={column.id}
-                                checked={column.getIsVisible()}
-                                onCheckedChange={(value) =>
-                                    column.toggleVisibility(!!value)
-                                }
-                            >
-                                {getColumnLabel(column)}
-                            </DropdownMenuCheckboxItem>
-                        ))}
-                </DropdownMenuGroup>
+            <PopoverContent align="end" sideOffset={6} className="w-72 gap-4">
+                <PopoverHeader className="flex-row items-center justify-between border-b pb-3">
+                    <PopoverTitle>Columns</PopoverTitle>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetColumnVisibility}
+                    >
+                        Reset
+                    </Button>
+                </PopoverHeader>
 
-                <DropdownMenuSeparator />
+                <div className="flex flex-col gap-3">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1.5 text-sm transition hover:bg-muted">
+                        <Checkbox
+                            checked={areAllHideableColumnsVisible}
+                            indeterminate={areSomeHideableColumnsVisible}
+                            onCheckedChange={(value) => toggleAllColumns(Boolean(value))}
+                            disabled={!hideableColumns.length}
+                            aria-label="Check all columns"
+                        />
+                        <span className="font-medium">Check all</span>
+                    </label>
 
-                <DropdownMenuItem onClick={resetColumnVisibility}>
-                    Reset column visibility
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+                    <div className="max-h-72 overflow-y-auto pr-1">
+                        <div className="flex flex-col gap-1">
+                            {hideableColumns.map((column) => (
+                                <label
+                                    key={column.id}
+                                    className="flex cursor-pointer items-center gap-3 rounded-md px-1 py-1.5 text-sm transition hover:bg-muted"
+                                >
+                                    <Checkbox
+                                        checked={column.getIsVisible()}
+                                        onCheckedChange={(value) =>
+                                            column.toggleVisibility(Boolean(value))
+                                        }
+                                        aria-label={`Toggle ${getColumnLabel(column)} column`}
+                                    />
+                                    <span>{getColumnLabel(column)}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
     ) : null;
 
     const handleCsvExport = () => {
@@ -638,6 +715,8 @@ export function DataTable<TData, TValue>({
                         />
                     </div>
 
+                    {moreFilter}
+
                     {toolbar}
                 </div>
 
@@ -656,16 +735,19 @@ export function DataTable<TData, TValue>({
             </div>
 
             <div className="overflow-hidden rounded-md border">
-                <Table>
+                <Table containerClassName="max-h-[58vh] overflow-auto">
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
                                     <TableHead
                                         key={header.id}
-                                        className={getColumnClassName(
-                                            header.column.columnDef,
-                                        )}
+                                        className={[
+                                            "sticky top-0 z-10 bg-background",
+                                            getColumnClassName(header.column.columnDef),
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ")}
                                     >
                                         {renderHeader<TData>(header)}
                                     </TableHead>

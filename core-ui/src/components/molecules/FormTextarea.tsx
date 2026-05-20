@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 
-import { FormFieldLabel } from "./form-field-label";
+import { FormFieldLabel } from "./FormFieldLabel";
 import {
     Field,
     FieldDescription,
