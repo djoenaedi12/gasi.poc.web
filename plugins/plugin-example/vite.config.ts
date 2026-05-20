@@ -12,9 +12,9 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: 'src/index.ts',
-      name: 'GasiPluginExample',
-      formats: ['umd'],
+      entry:    'src/index.ts',
+      name:     'GasiPluginExample',
+      formats:  ['umd'],
       fileName: 'plugin-example',
     },
     rollupOptions: {
@@ -29,7 +29,7 @@ export default defineConfig({
         },
       },
     },
-    outDir: '../../platform-app/public/plugins',
-    emptyOutDir: false,
+    outDir:      'dist',
+    emptyOutDir: true,
   },
 });
