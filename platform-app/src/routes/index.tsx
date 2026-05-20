@@ -1,30 +1,52 @@
 import { Routes, Route, Navigate } from 'react-router';
-import { useExtensions }           from '@gasi/core-starter';
+import { useExtensions }            from '@gasi/core-starter';
 import { ExtensionPoints, resolvePermission } from '@gasi/core-api';
-import { DashboardLayout }         from '../layouts/DashboardLayout';
-import { DashboardPage }           from '../features/dashboard/pages/DashboardPage';
+import { DashboardLayout }          from '../layouts/DashboardLayout';
+import { DashboardPage }            from '../features/dashboard/pages/DashboardPage';
+
+function NotFoundPage() {
+  return (
+    <div className="flex min-h-svh items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold">404</h1>
+        <p className="mt-2 text-muted-foreground">Halaman tidak ditemukan</p>
+      </div>
+    </div>
+  );
+}
+
+function ForbiddenPage() {
+  return (
+    <div className="flex min-h-svh items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold">403</h1>
+        <p className="mt-2 text-muted-foreground">Anda tidak memiliki akses ke halaman ini</p>
+      </div>
+    </div>
+  );
+}
 
 export function AppRoutes() {
-  const routeExts  = useExtensions(ExtensionPoints.ROUTE);
-  const guardExts  = useExtensions(ExtensionPoints.AUTH_GUARD);
+  const routeExts = useExtensions(ExtensionPoints.ROUTE);
+  const guardExts = useExtensions(ExtensionPoints.AUTH_GUARD);
 
-  // Ambil semua routes dari plugin yang aktif
   const pluginRoutes = routeExts.flatMap((ext) => ext.routes ?? []);
+  const authGuard    = guardExts[0]?.guard ?? null;
+  const Guard        = authGuard?.component ?? null;
 
-  // Ambil auth guard dari plugin-auth (kalau terpasang)
-  const authGuard = guardExts[0]?.guard ?? null;
-  const Guard     = authGuard?.component ?? null;
+  // Pisah auth routes (login, dll) dari protected routes
+  const authRoutes      = pluginRoutes.filter((r) => r.path === '/login' || r.path.startsWith('/auth'));
+  const protectedRoutes = pluginRoutes.filter((r) => r.path !== '/login' && !r.path.startsWith('/auth'));
 
-  const renderRoute = (route: typeof pluginRoutes[0]) => {
+  const renderProtectedRoute = (route: typeof pluginRoutes[0]) => {
     const Comp       = route.component;
     const permission = resolvePermission(route);
 
-    // Kalau plugin-auth tidak ada → render langsung tanpa guard
     if (!Guard) {
+      // Tidak ada plugin-auth → render bebas
       return <Route key={route.path} path={route.path} element={<Comp />} />;
     }
 
-    // Plugin-auth ada → wrap dengan guard + permission check
     return (
       <Route
         key={route.path}
@@ -40,26 +62,23 @@ export function AppRoutes() {
 
   return (
     <Routes>
-      {/* Route dari plugin-auth (login, forgot password, dll) */}
-      {routeExts
-        .flatMap((ext) => ext.routes ?? [])
-        .filter((r) => r.path.startsWith('/auth') || r.path === '/login')
-        .map((route) => (
-          <Route key={route.path} path={route.path} element={<route.component />} />
-        ))}
+      {/* Auth routes — tidak perlu guard */}
+      {authRoutes.map((r) => (
+        <Route key={r.path} path={r.path} element={<r.component />} />
+      ))}
+
+      {/* Error pages */}
+      <Route path="/403" element={<ForbiddenPage />} />
+      <Route path="/404" element={<NotFoundPage />} />
 
       {/* Protected routes dalam DashboardLayout */}
       <Route element={<DashboardLayout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-
-        {/* Routes dari semua plugin (kecuali auth routes) */}
-        {pluginRoutes
-          .filter((r) => !r.path.startsWith('/auth') && r.path !== '/login')
-          .map(renderRoute)}
+        {protectedRoutes.map(renderProtectedRoute)}
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
