@@ -1,18 +1,26 @@
 import React from 'react';
 
-export function ExampleWidget() {
+export function ExampleListPage() {
   return (
-    <div style={{
-      padding: '16px',
-      border: '1px solid #e2e8f0',
-      borderRadius: '8px',
-      background: '#f8fafc',
-    }}>
-      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>
-        🧩 Example Plugin Widget
-      </h3>
-      <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#64748b' }}>
-        Widget ini di-load dari plugin-example.umd.js
+    <div style={{ padding: '24px' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
+        Example List
+      </h1>
+      <p style={{ color: '#64748b' }}>
+        Halaman ini di-render oleh plugin-example melalui ROUTE extension point.
+      </p>
+    </div>
+  );
+}
+
+export function ExampleFormPage() {
+  return (
+    <div style={{ padding: '24px' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
+        Example Form
+      </h1>
+      <p style={{ color: '#64748b' }}>
+        Form page dari plugin-example.
       </p>
     </div>
   );

@@ -18,15 +18,12 @@ core-api/
 
 ### ExtensionPoints
 
-Daftar extension points yang tersedia di platform:
+Extension point yang tersedia di platform:
 
 ```ts
 import { ExtensionPoints } from '@gasi/core-api';
 
-ExtensionPoints.WIDGET         // Widget di dashboard
-ExtensionPoints.MENU_ITEM      // Item di sidebar
-ExtensionPoints.ROUTE          // Halaman/route tambahan
-ExtensionPoints.DATA_PROCESSOR // Transformasi data
+ExtensionPoints.ROUTE  // Route/halaman yang didaftarkan plugin
 ```
 
 ### PluginDefinition
@@ -37,16 +34,32 @@ Interface yang harus diimplementasikan setiap plugin:
 import type { PluginDefinition } from '@gasi/core-api';
 
 const myPlugin: PluginDefinition = {
-  id:          'plugin.nama',   // ID unik, format: 'plugin.nama'
+  id:          'plugin.nama',
   name:        'Nama Plugin',
   version:     '1.0.0',
   description: 'Deskripsi singkat',
   extensions: [
-    { point: ExtensionPoints.WIDGET, component: MyWidget },
+    {
+      point: ExtensionPoints.ROUTE,
+      routes: [
+        { path: '/nama/list',   component: ListPage },
+        { path: '/nama/new',    component: FormPage },
+        { path: '/nama/:id',    component: FormPage },
+      ],
+    },
   ],
   onStart() { /* dipanggil saat plugin di-start */ },
   onStop()  { /* dipanggil saat plugin di-stop  */ },
 };
+```
+
+### RouteDefinition
+
+```ts
+interface RouteDefinition {
+  path:      string;              // '/hr/employees/:id'
+  component: ComponentType<any>; // React component
+}
 ```
 
 ### PluginRegistry

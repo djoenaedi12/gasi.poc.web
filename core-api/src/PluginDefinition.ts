@@ -1,20 +1,22 @@
 import type { ExtensionPoint } from './ExtensionPoints';
 import type { ComponentType } from 'react';
 
+export interface RouteDefinition {
+  /** Path route, contoh: '/hr/employees' atau '/hr/employees/:id' */
+  path: string;
+  /** React component yang di-render untuk route ini */
+  component: ComponentType<any>;
+}
+
 export interface PluginExtension {
   /** Extension point yang dituju */
   point: ExtensionPoint;
-  /** React component (untuk WIDGET, MENU_ITEM, ROUTE) */
-  component?: ComponentType<any>;
-  /** Function processor (untuk DATA_PROCESSOR) */
-  fn?: (...args: any[]) => any;
-  /** Metadata tambahan */
-  meta?: Record<string, any>;
+  /** Daftar route yang didaftarkan plugin (untuk point: 'route') */
+  routes?: RouteDefinition[];
 }
 
 /**
  * Kontrak yang harus dipenuhi setiap plugin.
- * Mirip dengan interface Plugin di PF4J.
  */
 export interface PluginDefinition {
   /** ID unik plugin, format: 'plugin.nama' */
