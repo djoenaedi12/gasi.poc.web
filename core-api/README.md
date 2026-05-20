@@ -1,82 +1,128 @@
 # @gasi/core-api
 
-Kontrak dan definisi inti untuk plugin system. Package ini menjadi
-dependency utama bagi semua plugin maupun `core-starter`.
+Kontrak dan definisi inti untuk plugin system.
 
 ## Isi
 
 ```
 core-api/
 └── src/
-    ├── ExtensionPoints.ts   # Konstanta daftar extension points yang tersedia
-    ├── PluginDefinition.ts  # Interface kontrak yang harus dipenuhi setiap plugin
+    ├── ExtensionPoints.ts   # ROUTE, AUTH_GUARD
+    ├── PluginDefinition.ts  # PluginDefinition, RouteDefinition, Actions, resolvePermission
     ├── PluginRegistry.ts    # PluginRegistry class + singleton pluginRegistry
-    └── index.ts             # Public exports
+    └── index.ts
 ```
 
 ## API
 
 ### ExtensionPoints
 
-Extension point yang tersedia di platform:
-
 ```ts
 import { ExtensionPoints } from '@gasi/core-api';
 
-ExtensionPoints.ROUTE  // Route/halaman yang didaftarkan plugin
+ExtensionPoints.ROUTE       // Plugin daftarkan halaman
+ExtensionPoints.AUTH_GUARD  // Plugin auth daftarkan guard & permission checker
 ```
 
-### PluginDefinition
+### Actions
 
-Interface yang harus diimplementasikan setiap plugin:
+Standard actions yang dipakai semua plugin:
 
 ```ts
-import type { PluginDefinition } from '@gasi/core-api';
+import { Actions } from '@gasi/core-api';
 
-const myPlugin: PluginDefinition = {
-  id:          'plugin.nama',
-  name:        'Nama Plugin',
-  version:     '1.0.0',
-  description: 'Deskripsi singkat',
-  extensions: [
-    {
-      point: ExtensionPoints.ROUTE,
-      routes: [
-        { path: '/nama/list',   component: ListPage },
-        { path: '/nama/new',    component: FormPage },
-        { path: '/nama/:id',    component: FormPage },
-      ],
-    },
-  ],
-  onStart() { /* dipanggil saat plugin di-start */ },
-  onStop()  { /* dipanggil saat plugin di-stop  */ },
-};
+Actions.READ    // 'read'
+Actions.CREATE  // 'create'
+Actions.UPDATE  // 'update'
+Actions.DELETE  // 'delete'
+Actions.EXPORT  // 'export'
 ```
 
 ### RouteDefinition
 
 ```ts
 interface RouteDefinition {
-  path:      string;              // '/hr/employees/:id'
-  component: ComponentType<any>; // React component
+  path:      string;
+  component: ComponentType<any>;
+  resource?: string;  // 'employee' — tanpa prefix plugin
+  action?:   Action;  // default: 'read'
 }
+
+// Permission di-generate otomatis: resource:action
+// 'employee' + 'read' → 'employee:read'
 ```
 
-### PluginRegistry
-
-Mengelola lifecycle semua plugin:
+### resolvePermission
 
 ```ts
-import { pluginRegistry } from '@gasi/core-api';
+import { resolvePermission, Actions } from '@gasi/core-api';
 
-pluginRegistry.register(myPlugin);       // Daftarkan plugin
-pluginRegistry.start('plugin.nama');     // Start plugin
-pluginRegistry.stop('plugin.nama');      // Stop plugin
-pluginRegistry.getExtensions(point);     // Ambil semua extension aktif
-pluginRegistry.getPlugins();             // Ambil semua plugin + state-nya
-pluginRegistry.onEvent(fn);             // Subscribe ke event lifecycle
+resolvePermission({ path: '/employees', component: X, resource: 'employee', action: Actions.READ })
+// → 'employee:read'
+
+resolvePermission({ path: '/employees', component: X })
+// → undefined (bebas diakses)
 ```
 
-## Dependency
+### Plugin definition contoh
 
-Package ini tidak memiliki dependency runtime. Pure TypeScript.
+```ts
+import { pluginRegistry, ExtensionPoints, Actions } from '@gasi/core-api';
+import type { PluginDefinition } from '@gasi/core-api';
+
+pluginRegistry.register({
+  id:      'plugin.hr',
+  name:    'HR Module',
+  version: '1.0.0',
+  extensions: [
+    {
+      point: ExtensionPoints.ROUTE,
+      routes: [
+        { path: '/employees',      component: EmployeeListPage,   resource: 'employee', action: Actions.READ   },
+        { path: '/employees/new',  component: EmployeeFormPage,   resource: 'employee', action: Actions.CREATE },
+        { path: '/employees/:id',  component: EmployeeFormPage,   resource: 'employee', action: Actions.UPDATE },
+      ],
+    },
+  ],
+});
+```
+
+### Auth Guard (plugin-auth)
+
+```ts
+pluginRegistry.register({
+  id: 'plugin.auth',
+  extensions: [
+    {
+      point: ExtensionPoints.AUTH_GUARD,
+      guard: {
+        component:     PermissionGuard,   // wrap protected routes
+        hasPermission: (p) => store.hasPermission(p),
+      },
+    },
+    {
+      point: ExtensionPoints.ROUTE,
+      routes: [
+        { path: '/login', component: LoginPage },
+      ],
+    },
+  ],
+  async onStart() {
+    // Restore session saat refresh
+    try {
+      await api.get('/auth/validate');
+      const res = await api.get('/auth/me');
+      useAppStore.getState().setSession(res.data);
+    } catch { /* tidak ada session, redirect akan handle */ }
+  },
+});
+```
+
+### Behaviour tanpa plugin-auth
+
+| Kondisi | Behaviour |
+|---|---|
+| Sidebar | Kosong (session null, tidak ada menu) |
+| Routes plugin | Bisa diakses bebas (tidak ada guard) |
+| hasPermission | Selalu false |
+| Login page | Tidak ada |

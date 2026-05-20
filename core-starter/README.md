@@ -101,3 +101,36 @@ await loadAndStartPlugins([
 
 - `@gasi/core-api` — kontrak plugin
 - `react` (peer) — untuk hooks dan komponen
+
+### useAppStore
+
+Global session store. Diisi oleh plugin-auth setelah login atau restore session.
+Kalau plugin-auth tidak terpasang, `session` tetap `null`.
+
+```ts
+import { useAppStore } from '@gasi/core-starter';
+
+// Di komponen React
+const { session, hasPermission, clearSession } = useAppStore();
+
+// Cek permission
+const canDelete = hasPermission('employee:delete');
+
+// Akses user info
+const user = session?.user;
+const menus = session?.menus ?? [];
+
+// Programmatic (di luar React)
+useAppStore.getState().setSession(sessionData);
+useAppStore.getState().clearSession();
+```
+
+**Shape session:**
+```ts
+interface AppSession {
+  user:        { id, username, fullName };
+  roles:       string[];
+  permissions: string[];  // ['employee:read', 'employee:create']
+  menus:       MenuItem[];
+}
+```
