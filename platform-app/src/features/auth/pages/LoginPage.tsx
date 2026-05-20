@@ -3,20 +3,20 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router"
 
-import { FormButton } from "@/components/molecules/form-button"
-import { FormInput } from "@/components/molecules/form-input"
-import { Button } from "@/components/ui/button"
+import { FormButton } from "@gasi/core-ui"
+import { FormInput } from "@gasi/core-ui"
+import { Button } from "@gasi/core-ui"
 import {
     FieldDescription,
     FieldGroup,
     FieldSeparator,
-} from "@/components/ui/field"
+} from "@gasi/core-ui"
 import {
     loginSchema,
     type LoginFormData,
 } from "@/features/auth/schemas/loginSchema"
 import { useLogin } from "@/features/auth/hooks/useLogin"
-import { cn } from "@/lib/utils"
+import { cn } from "@gasi/core-ui"
 
 function LoginForm({
     className,

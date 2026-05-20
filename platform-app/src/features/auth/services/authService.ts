@@ -1,4 +1,4 @@
-import { api } from "@/lib/axios";
+import { api } from "@gasi/core-ui";
 import type { ApiResponse, LoginRequest, LoginResponse } from "../types/auth.types";
 
 export const authService = {

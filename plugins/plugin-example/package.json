@@ -6,7 +6,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@gasi/core-api": "*"
+    "@gasi/core-api": "*",
+    "@gasi/core-ui":  "*"
   },
   "peerDependencies": {
     "react": ">=19"

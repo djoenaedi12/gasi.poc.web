@@ -7,23 +7,27 @@ Plugin architecture untuk React + Vite menggunakan npm workspaces.
 ```
 gasi.poc.web/
 ├── core-api/          # Kontrak plugin (ExtensionPoints, PluginRegistry, interfaces)
-├── core-starter/      # Utility & hooks (useExtensions, PluginSlot, PluginLoader)
+├── core-starter/      # Plugin hooks & loader (useExtensions, PluginSlot, PluginLoader)
+├── core-ui/           # Shared UI components, lib, dan types
 ├── platform-app/      # Aplikasi utama React + Vite + Shadcn
 └── plugins/
     └── plugin-example/  # Contoh implementasi plugin
 ```
 
-## Cara kerja
+## Dependency graph
 
 ```
-core-api  →  core-starter  →  platform-app
-    ↑                               ↑
-    └──────── plugin-*  ────────────┘
+core-api
+    ↓
+core-starter
+    ↓
+core-ui
+    ↓
+platform-app  ←── plugin-*
 ```
 
-Plugin di-build menjadi file `.umd.js` dan di-copy manual ke
-`platform-app/public/plugins/`. Platform akan load plugin saat startup —
-jika file tidak ada, plugin di-skip dan app tetap berjalan normal.
+Plugin yang hanya butuh registry → cukup depend ke `core-api`.
+Plugin yang butuh UI component → depend ke `core-ui`.
 
 ## Development
 
@@ -45,7 +49,7 @@ npm run build
 
 1. Buat folder `plugins/nama-plugin/`
 2. Ikuti struktur `plugins/plugin-example/`
-3. Plugin depend ke `@gasi/core-api`
+3. Depend ke `@gasi/core-api` dan/atau `@gasi/core-ui`
 4. Build: `npm run build -w plugins/nama-plugin`
 5. File `.umd.js` otomatis masuk ke `platform-app/public/plugins/`
 6. Daftarkan URL-nya di `platform-app/src/main.tsx`

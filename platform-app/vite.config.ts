@@ -10,6 +10,7 @@ export default defineConfig({
     alias: {
       '@gasi/core-api':     path.resolve(__dirname, '../core-api/src'),
       '@gasi/core-starter': path.resolve(__dirname, '../core-starter/src'),
+      '@gasi/core-ui':      path.resolve(__dirname, '../core-ui/src'),
     },
   },
   server: {

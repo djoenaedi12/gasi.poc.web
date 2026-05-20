@@ -4,13 +4,13 @@ import { useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { Link } from "react-router"
 
-import { FormButton } from "@/components/molecules/form-button"
-import { FormInput } from "@/components/molecules/form-input"
+import { FormButton } from "@gasi/core-ui"
+import { FormInput } from "@gasi/core-ui"
 import {
     FieldDescription,
     FieldGroup,
-} from "@/components/ui/field"
-import { cn } from "@/lib/utils"
+} from "@gasi/core-ui"
+import { cn } from "@gasi/core-ui"
 import {
     forgotPasswordSchema,
     type ForgotPasswordFormData,

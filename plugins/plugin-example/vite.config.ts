@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@gasi/core-api': path.resolve(__dirname, '../../core-api/src'),
+      '@gasi/core-ui':  path.resolve(__dirname, '../../core-ui/src'),
     },
   },
   build: {
@@ -17,18 +18,17 @@ export default defineConfig({
       fileName: 'plugin-example',
     },
     rollupOptions: {
-      // Jangan bundle react dan core — pakai punya platform-app
-      external: ['react', 'react-dom', '@gasi/core-api', '@gasi/core-starter'],
+      external: ['react', 'react-dom', '@gasi/core-api', '@gasi/core-starter', '@gasi/core-ui'],
       output: {
         globals: {
           'react':               'React',
           'react-dom':           'ReactDOM',
           '@gasi/core-api':     'GasiCoreApi',
           '@gasi/core-starter': 'GasiCoreStarter',
+          '@gasi/core-ui':      'GasiCoreUi',
         },
       },
     },
-    // Output langsung ke platform-app/public/plugins/
     outDir: '../../platform-app/public/plugins',
     emptyOutDir: false,
   },

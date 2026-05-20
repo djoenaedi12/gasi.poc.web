@@ -1,4 +1,4 @@
-export type { ApiResponse } from "@/types/api.types";
+export type { ApiResponse } from "@gasi/core-ui";
 
 export interface User {
     name: string;

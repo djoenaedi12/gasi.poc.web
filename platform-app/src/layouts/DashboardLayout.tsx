@@ -1,11 +1,11 @@
 import { Outlet } from "react-router";
 
-import { AppHeader } from "@/components/organisms/app-header";
-import { AppSidebar } from "@/components/organisms/app-sidebar";
+import { AppHeader } from "@gasi/core-ui";
+import { AppSidebar } from "@gasi/core-ui";
 import {
     SidebarInset,
     SidebarProvider,
-} from "@/components/ui/sidebar";
+} from "@gasi/core-ui";
 
 export function DashboardLayout() {
     return (

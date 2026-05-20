@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/molecules/page-header";
+import { PageHeader } from "@gasi/core-ui";
 
 export function DashboardPage() {
     return (
