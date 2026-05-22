@@ -6,7 +6,8 @@
     "core-api",
     "core-starter",
     "core-ui",
-    "platform-app"
+    "platform-app",
+    "plugins/*"
   ],
   "scripts": {
     "dev": "npm run dev -w platform-app",

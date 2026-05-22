@@ -64,8 +64,8 @@ export function Stepper({
                         <li
                             key={step.id}
                             className={cn(
-                                "flex min-w-0",
-                                isVertical ? "items-start" : "items-start md:flex-1",
+                                "min-w-0",
+                                isVertical ? "flex items-start" : "flex items-start md:relative md:block md:flex-1",
                             )}
                         >
                             {clickable ? (
@@ -76,8 +76,8 @@ export function Stepper({
                                     aria-label={`${step.title}${isCompleted ? ", completed" : isActive ? ", current step" : ""}`}
                                     onClick={() => onStepClick?.(index)}
                                     className={cn(
-                                        "h-auto min-w-0 justify-start gap-3 rounded-md p-0 text-left hover:bg-transparent disabled:cursor-not-allowed",
-                                        !isVertical && "md:w-32 md:flex-col md:justify-start md:text-center",
+                                        "relative z-10 h-auto min-w-0 justify-start gap-3 rounded-md p-0 text-left hover:bg-transparent disabled:cursor-not-allowed",
+                                        !isVertical && "md:w-full md:flex-col md:items-center md:justify-start md:text-center",
                                     )}
                                 >
                                     {content}
@@ -87,9 +87,9 @@ export function Stepper({
                                     aria-current={isActive ? "step" : undefined}
                                     aria-disabled={step.disabled || disabled ? true : undefined}
                                     className={cn(
-                                        "flex min-w-0 items-start gap-3 text-left",
+                                        "relative z-10 flex min-w-0 items-start gap-3 text-left",
                                         (step.disabled || disabled) && "opacity-60",
-                                        !isVertical && "md:w-32 md:flex-col md:items-center md:text-center",
+                                        !isVertical && "md:w-full md:flex-col md:items-center md:text-center",
                                     )}
                                 >
                                     {content}
@@ -103,7 +103,7 @@ export function Stepper({
                                         "shrink-0 bg-border",
                                         isVertical
                                             ? "ml-5 mt-10 h-8 w-px"
-                                            : "ml-5 mt-10 h-8 w-px md:mx-4 md:mt-5 md:h-px md:min-w-8 md:flex-1",
+                                            : "ml-5 mt-10 h-8 w-px md:absolute md:left-[calc(50%+5rem)] md:top-5 md:ml-0 md:mt-0 md:h-px md:w-[calc(100%-10rem)]",
                                         isCompleted && "bg-primary",
                                     )}
                                 />
@@ -161,7 +161,7 @@ function StepContent({
                     <div
                         className={cn(
                             "text-xs leading-5 text-muted-foreground",
-                            !isVertical && "md:max-w-36",
+                            !isVertical && "md:max-w-48",
                         )}
                     >
                         {description}
