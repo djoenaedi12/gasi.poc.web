@@ -5,8 +5,8 @@ import { FormFieldLabel } from "./FormFieldLabel";
 import {
     Field,
     FieldDescription,
-    FieldError,
 } from "../ui/field";
+import { FormFieldError } from "./FormFieldError";
 import { Textarea } from "../ui/textarea";
 
 type FormTextareaProps<TFieldValues extends FieldValues> = {
@@ -57,7 +57,7 @@ export function FormTextarea<TFieldValues extends FieldValues>({
                 <FieldDescription>{description}</FieldDescription>
             ) : null}
 
-            {error ? <FieldError>{error.message as string}</FieldError> : null}
+            {error ? <FormFieldError error={error} /> : null}
         </Field>
     );
 }

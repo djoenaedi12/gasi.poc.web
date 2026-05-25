@@ -8,13 +8,24 @@ import { loadAndStartPlugins } from '@gasi/core-starter';
 import './index.css';
 import App from './App.tsx';
 
+declare global {
+  interface Window {
+    GasiCoreApi: typeof CoreApi;
+    GasiCoreStarter: typeof CoreStarter;
+    GasiCoreUi: typeof CoreUi;
+    React: typeof React;
+    ReactRouter: typeof ReactRouter;
+    process: { env: { NODE_ENV: string } };
+  }
+}
+
 // Expose core libs ke window supaya plugin UMD bisa mengaksesnya
-(window as any).GasiCoreApi = CoreApi;
-(window as any).GasiCoreStarter = CoreStarter;
-(window as any).GasiCoreUi = CoreUi;
-(window as any).React = React;
-(window as any).ReactRouter = ReactRouter;
-(window as any).process = { env: { NODE_ENV: import.meta.env.MODE } };
+window.GasiCoreApi = CoreApi;
+window.GasiCoreStarter = CoreStarter;
+window.GasiCoreUi = CoreUi;
+window.React = React;
+window.ReactRouter = ReactRouter;
+window.process = { env: { NODE_ENV: import.meta.env.MODE } };
 
 async function loadPluginUrls() {
   const defaultUrls = ['/plugins/plugin-auth.umd.js'];

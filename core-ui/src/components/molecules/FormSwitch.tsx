@@ -11,8 +11,8 @@ import {
     Field,
     FieldContent,
     FieldDescription,
-    FieldError,
 } from "../ui/field";
+import { FormFieldError } from "./FormFieldError";
 import { Switch } from "../ui/switch";
 import { cn } from "../../lib/utils";
 
@@ -78,11 +78,7 @@ export function FormSwitch<TFieldValues extends FieldValues>({
                                 </FieldDescription>
                             ) : null}
 
-                            {error ? (
-                                <FieldError>
-                                    {error.message as string}
-                                </FieldError>
-                            ) : null}
+                            {error ? <FormFieldError error={error} /> : null}
                         </FieldContent>
                     </div>
                 )}

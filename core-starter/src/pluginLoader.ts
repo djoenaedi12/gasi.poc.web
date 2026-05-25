@@ -38,9 +38,13 @@ export async function loadAndStartPlugins(pluginUrls: string[]): Promise<void> {
 
   // Plugin UMD akan auto-register ke pluginRegistry saat script di-load
   // Start semua yang sudah registered tapi belum started
-  pluginRegistry.getPlugins().forEach(plugin => {
+  for (const plugin of pluginRegistry.getPlugins()) {
     if (plugin.state === 'registered') {
-      pluginRegistry.start(plugin.id);
+      try {
+        await pluginRegistry.start(plugin.id);
+      } catch (err) {
+        console.warn(`[PluginLoader] Gagal start plugin ${plugin.id}:`, err);
+      }
     }
-  });
+  }
 }

@@ -6,6 +6,7 @@ import { DataUploadHistoryPage } from "../components/organisms/DataUploadHistory
 import { DataUploadPage } from "../components/organisms/DataUploadPage";
 import { DataUploadRowDetailPage } from "../components/organisms/DataUploadRowDetailPage";
 import { DataUploadRowsPage } from "../components/organisms/DataUploadRowsPage";
+import { translate, useI18n } from "./i18n";
 
 export type DataUploadRoutesConfig = {
     resource: string;
@@ -60,14 +61,15 @@ export function createDataUploadRoutes(config: DataUploadRoutesConfig): RouteDef
 
     function HistoryPage() {
         const navigate = useNavigate();
+        const { t } = useI18n();
 
         return (
             <DataUploadHistoryPage
                 resource={resource}
                 breadcrumbs={[
                     { label: entityLabel, href: basePath },
-                    { label: "Upload", href: uploadPath },
-                    { label: "History" },
+                    { label: t("dataUpload.routes.upload"), href: uploadPath },
+                    { label: t("dataUpload.routes.history") },
                 ]}
                 onViewUpload={(uploadId) => navigate(`${historyPath}/${uploadId}`)}
                 onContinueUpload={(uploadId) => navigate(`${uploadPath}?uploadId=${uploadId}`)}
@@ -78,6 +80,7 @@ export function createDataUploadRoutes(config: DataUploadRoutesConfig): RouteDef
     function RowsPage() {
         const navigate = useNavigate();
         const { uploadId } = useParams();
+        const { t } = useI18n();
 
         if (!uploadId) return null;
 
@@ -87,8 +90,8 @@ export function createDataUploadRoutes(config: DataUploadRoutesConfig): RouteDef
                 uploadId={uploadId}
                 breadcrumbs={[
                     { label: entityLabel, href: basePath },
-                    { label: "Upload", href: uploadPath },
-                    { label: "History", href: historyPath },
+                    { label: t("dataUpload.routes.upload"), href: uploadPath },
+                    { label: t("dataUpload.routes.history"), href: historyPath },
                     { label: uploadId },
                 ]}
                 onViewRow={(rowId) =>
@@ -104,6 +107,7 @@ export function createDataUploadRoutes(config: DataUploadRoutesConfig): RouteDef
         const location = useLocation();
         const { uploadId, rowId } = useParams();
         const state = location.state as UploadNavState;
+        const { t } = useI18n();
 
         if (!uploadId || !rowId) return null;
 
@@ -111,13 +115,13 @@ export function createDataUploadRoutes(config: DataUploadRoutesConfig): RouteDef
             state?.context === "upload"
                 ? [
                     { label: entityLabel, href: basePath },
-                    { label: "Upload", href: state.backTo },
+                    { label: t("dataUpload.routes.upload"), href: state.backTo },
                     { label: rowId },
                 ]
                 : [
                     { label: entityLabel, href: basePath },
-                    { label: "Upload", href: uploadPath },
-                    { label: "History", href: historyPath },
+                    { label: t("dataUpload.routes.upload"), href: uploadPath },
+                    { label: t("dataUpload.routes.history"), href: historyPath },
                     { label: uploadId, href: `${historyPath}/${uploadId}` },
                     { label: rowId },
                 ];
@@ -138,9 +142,9 @@ export function createDataUploadRoutes(config: DataUploadRoutesConfig): RouteDef
     RowDetailPage.displayName = `${resource}UploadRowDetailPage`;
 
     return [
-        { path: uploadPath, component: UploadPage, resource, action: uploadAction },
-        { path: historyPath, component: HistoryPage, resource, action: readAction },
-        { path: `${historyPath}/:uploadId`, component: RowsPage, resource, action: readAction },
-        { path: `${historyPath}/:uploadId/rows/:rowId`, component: RowDetailPage, resource, action: readAction },
+        { path: uploadPath, component: UploadPage, resource, action: uploadAction, title: `${entityLabel} ${translate("dataUpload.routes.upload")}` },
+        { path: historyPath, component: HistoryPage, resource, action: readAction, title: `${entityLabel} ${translate("dataUpload.titles.history")}` },
+        { path: `${historyPath}/:uploadId`, component: RowsPage, resource, action: readAction, title: `${entityLabel} ${translate("dataUpload.titles.rows")}` },
+        { path: `${historyPath}/:uploadId/rows/:rowId`, component: RowDetailPage, resource, action: readAction, title: `${entityLabel} ${translate("dataUpload.titles.rowDetail")}` },
     ];
 }

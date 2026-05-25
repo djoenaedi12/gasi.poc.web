@@ -47,6 +47,7 @@ export function Stepper({
                     const Icon = step.icon;
                     const isActive = index === currentStep;
                     const isCompleted = index < currentStep;
+                    const isPastOrActive = index <= currentStep;
                     const clickable = Boolean(onStepClick) && !step.disabled && !disabled;
                     const content = (
                         <StepContent
@@ -104,7 +105,7 @@ export function Stepper({
                                         isVertical
                                             ? "ml-5 mt-10 h-8 w-px"
                                             : "ml-5 mt-10 h-8 w-px md:absolute md:left-[calc(50%+5rem)] md:top-5 md:ml-0 md:mt-0 md:h-px md:w-[calc(100%-10rem)]",
-                                        isCompleted && "bg-primary",
+                                        isPastOrActive && "bg-primary",
                                     )}
                                 />
                             ) : null}
@@ -141,7 +142,7 @@ function StepContent({
                 className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-full border text-sm font-medium",
                     isCompleted && "border-primary bg-primary text-primary-foreground",
-                    isActive && "border-primary text-primary",
+                    isActive && "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25",
                     !isActive && !isCompleted && "border-muted-foreground/30 text-muted-foreground",
                 )}
             >
@@ -155,7 +156,14 @@ function StepContent({
             </div>
 
             <div className={cn("min-w-0 pt-1", !isVertical && "md:mt-2 md:space-y-1 md:pt-0")}>
-                <div className="text-sm font-medium leading-5">{title}</div>
+                <div
+                    className={cn(
+                        "text-sm font-medium leading-5",
+                        isActive && "text-primary",
+                    )}
+                >
+                    {title}
+                </div>
 
                 {description ? (
                     <div

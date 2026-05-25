@@ -1,4 +1,4 @@
-import { useState, type ReactElement, type ReactNode } from "react";
+import { cloneElement, useState, type MouseEvent, type ReactElement, type ReactNode } from "react";
 import { CircleHelp, LoaderCircle, TriangleAlert } from "lucide-react";
 
 import {
@@ -11,12 +11,13 @@ import {
     AlertDialogHeader,
     AlertDialogMedia,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { cn } from "../../lib/utils";
 
 type ConfirmDialogProps = {
-    trigger: ReactElement;
+    trigger?: ReactElement;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
     title?: ReactNode;
     description?: ReactNode;
     confirmLabel?: string;
@@ -30,6 +31,8 @@ type ConfirmDialogProps = {
 
 export function ConfirmDialog({
     trigger,
+    open: controlledOpen,
+    onOpenChange,
     title = "Are you sure?",
     description = "This action cannot be undone.",
     confirmLabel = "Continue",
@@ -40,9 +43,29 @@ export function ConfirmDialog({
     size = "default",
     loading,
 }: ConfirmDialogProps) {
-    const [open, setOpen] = useState(false);
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const open = controlledOpen ?? uncontrolledOpen;
+    const setOpen = (nextOpen: boolean) => {
+        setUncontrolledOpen(nextOpen);
+        onOpenChange?.(nextOpen);
+    };
     const isLoading = loading ?? isSubmitting;
+    const triggerProps = trigger?.props as { onClick?: (event: MouseEvent) => void } | undefined;
+    const triggerElement = trigger
+        ? cloneElement(trigger as ReactElement<{ onClick?: (event: MouseEvent) => void }>, {
+            onClick: (event: MouseEvent) => {
+                triggerProps?.onClick?.(event);
+
+                if (event.defaultPrevented) {
+                    return;
+                }
+
+                event.preventDefault();
+                setOpen(true);
+            },
+        })
+        : null;
     const resolvedIcon =
         icon ??
         (destructive ? (
@@ -63,7 +86,7 @@ export function ConfirmDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={setOpen}>
-            <AlertDialogTrigger render={trigger} />
+            {triggerElement}
 
             <AlertDialogContent size={size}>
                 <AlertDialogHeader>

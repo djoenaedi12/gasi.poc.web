@@ -5,8 +5,8 @@ import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import {
     Field,
     FieldDescription,
-    FieldError,
 } from "../ui/field";
+import { FormFieldError } from "./FormFieldError";
 import { FormFieldLabel } from "./FormFieldLabel";
 import { Input } from "../ui/input";
 import {
@@ -130,9 +130,7 @@ export function FormInput<TFieldValues extends FieldValues>({
                 <FieldDescription>{description}</FieldDescription>
             ) : null}
 
-            {error ? (
-                <FieldError>{error.message as string}</FieldError>
-            ) : null}
+            {error ? <FormFieldError error={error} /> : null}
         </Field>
     );
 }

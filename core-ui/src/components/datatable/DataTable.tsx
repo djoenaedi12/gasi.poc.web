@@ -20,10 +20,12 @@ import {
     ChevronLast,
     ChevronLeft,
     ChevronRight,
+    Columns3,
     Download,
+    Filter,
     Search,
-    Settings2,
     SearchX,
+    X,
 } from "lucide-react";
 import {
     Empty,
@@ -45,12 +47,14 @@ import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import {
     DropdownMenu,
+    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
+import { DateRangePicker } from "../molecules/DateRangePicker";
 import {
     Popover,
     PopoverContent,
@@ -69,8 +73,7 @@ import {
 import { exportVisibleTableRowsToCsv } from "./dataTableExport";
 import { DataTableSortableHeader } from "./DataTableSortableHeader";
 import {
-    buildSearchFilter,
-    combineFilters,
+    buildSearchRequest,
     getColumnFieldIds,
     getColumnClassName,
     getColumnLabel,
@@ -79,6 +82,149 @@ import {
     type ColumnVisibilityState,
     type DataTableColumn,
 } from "./dataTableUtils";
+import type {
+    DataTableAction,
+    DataTableEmptyState,
+    DataTableFilterChip,
+    DataTableFilterControl,
+    DataTableFilterField,
+} from "./dataTableTypes";
+
+function formatDateLabel(value: string) {
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat(undefined, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    }).format(date);
+}
+
+function formatFilterChipValue(filter: DataTableFilterField, value: string) {
+    if (filter.type === "date-range") {
+        const [from, to] = value.split("..");
+
+        if (from && to) {
+            return `${formatDateLabel(from)} - ${formatDateLabel(to)}`;
+        }
+
+        if (from) {
+            return `From ${formatDateLabel(from)}`;
+        }
+
+        if (to) {
+            return `Until ${formatDateLabel(to)}`;
+        }
+    }
+
+    if (filter.type === "multi-select") {
+        return value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => filter.options?.find((option) => option.value === item)?.label ?? item)
+            .join(", ");
+    }
+
+    if (filter.type === "select") {
+        return filter.options?.find((option) => option.value === value)?.label ?? value;
+    }
+
+    return value;
+}
+
+function renderFilterControl(filter: DataTableFilterControl, mode: "toolbar" | "popover" = "popover") {
+    const selectedValues = filter.value
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+    const selectedLabels = selectedValues
+        .map((value) => filter.options?.find((option) => option.value === value)?.label ?? value);
+    const className = mode === "toolbar" ? "h-10 w-full sm:w-44" : "h-10";
+
+    if (filter.type === "select") {
+        return (
+            <select
+                value={filter.value}
+                onChange={(event) => filter.onChange(event.target.value)}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+                {(filter.options ?? []).map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        );
+    }
+
+    if (filter.type === "multi-select") {
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className={[
+                                "justify-between truncate",
+                                mode === "toolbar" ? "w-full sm:w-48" : "w-full",
+                            ].join(" ")}
+                        />
+                    }
+                >
+                    <span className="truncate">
+                        {selectedLabels.length ? selectedLabels.join(", ") : filter.placeholder ?? filter.label}
+                    </span>
+                    <ChevronDown className="size-4 shrink-0 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" sideOffset={6} className="w-52">
+                    <DropdownMenuGroup>
+                        {(filter.options ?? []).map((option) => {
+                            const checked = selectedValues.includes(option.value);
+                            return (
+                                <DropdownMenuCheckboxItem
+                                    key={option.value}
+                                    checked={checked}
+                                    onCheckedChange={(nextChecked) => {
+                                        const nextValues = nextChecked
+                                            ? [...selectedValues, option.value]
+                                            : selectedValues.filter((value) => value !== option.value);
+                                        filter.onChange(nextValues.join(","));
+                                    }}
+                                >
+                                    {option.label}
+                                </DropdownMenuCheckboxItem>
+                            );
+                        })}
+                    </DropdownMenuGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    }
+
+    if (filter.type === "date-range") {
+        return (
+            <DateRangePicker
+                value={filter.value}
+                onChange={filter.onChange}
+                placeholder={filter.placeholder ?? filter.label}
+                className={mode === "toolbar" ? "w-full sm:w-auto" : "w-full"}
+            />
+        );
+    }
+
+    return (
+        <Input
+            type={filter.type === "date" ? "date" : undefined}
+            value={filter.value}
+            onChange={(event) => filter.onChange(event.target.value)}
+            placeholder={filter.placeholder}
+            className={className}
+        />
+    );
+}
 
 function renderHeader<TData>(header: Header<TData, unknown>) {
     if (header.isPlaceholder) {
@@ -100,17 +246,7 @@ function renderHeader<TData>(header: Header<TData, unknown>) {
     );
 }
 
-type DataTableAction = {
-    label: string;
-    icon?: ReactNode;
-    onClick?: () => void | Promise<void>;
-    variant?: "default" | "outline" | "secondary" | "destructive" | "ghost";
-    hidden?: boolean;
-    disabled?: boolean;
-    items?: DataTableAction[];
-};
-
-type DataTableProps<TData, TValue> = {
+export type DataTableProps<TData, TValue> = {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     searchKey?: string;
@@ -131,6 +267,19 @@ type DataTableProps<TData, TValue> = {
     toolbar?: ReactNode;
     moreFilter?: ReactNode;
     toolbarEnd?: ReactNode;
+    filterAction?: ReactNode;
+    filterTitle?: string;
+    filterControls?: DataTableFilterControl[];
+    filterActiveCount?: number;
+    activeFilterChips?: DataTableFilterChip[];
+    onApplyFilters?: () => void;
+    onResetFilters?: () => void;
+    onClearFilters?: () => void;
+    activeFilters?: ReactNode;
+    entityLabel?: string;
+    emptyState?: DataTableEmptyState;
+    filteredEmptyState?: DataTableEmptyState;
+    highlightFirstRow?: boolean;
     actions?: DataTableAction[];
     primaryAction?: DataTableAction;
     enableColumnSettings?: boolean;
@@ -151,7 +300,7 @@ type DataTableProps<TData, TValue> = {
     onSortingChange?: (sorts: { field: string; direction: "ASC" | "DESC" }[]) => void;
 };
 
-type ServerDataTableProps<TData, TValue> = Omit<
+export type ServerDataTableProps<TData, TValue> = Omit<
     DataTableProps<TData, TValue>,
     | "data"
     | "serverSide"
@@ -170,6 +319,7 @@ type ServerDataTableProps<TData, TValue> = Omit<
     ) => UseQueryResult<PageResult<TData> | undefined, unknown>;
     searchFields?: string[];
     buildFilter?: (search: string) => GenericFilter | undefined;
+    filters?: DataTableFilterField[];
     moreFilter?: ReactNode;
     advancedFilter?: GenericFilter;
     defaultSearchValue?: string;
@@ -183,6 +333,7 @@ export function ServerDataTable<TData, TValue>({
     pageQuery,
     searchFields,
     buildFilter,
+    filters = [],
     moreFilter,
     advancedFilter,
     columnPreferenceKey,
@@ -199,6 +350,12 @@ export function ServerDataTable<TData, TValue>({
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(defaultPageSize);
     const [sorts, setSorts] = useState<SortOrder[]>([]);
+    const [draftFilterValues, setDraftFilterValues] = useState<Record<string, string>>(
+        () => Object.fromEntries(filters.map((filter) => [filter.id, filter.value ?? ""])),
+    );
+    const [appliedFilterValues, setAppliedFilterValues] = useState<Record<string, string>>(
+        () => Object.fromEntries(filters.map((filter) => [filter.id, filter.value ?? ""])),
+    );
     const [columnVisibility, setColumnVisibility] =
         useState<ColumnVisibilityState>(() =>
             getInitialColumnVisibility(columns, defaultVisibleColumns, columnPreferenceKey),
@@ -209,14 +366,77 @@ export function ServerDataTable<TData, TValue>({
         return fieldIds.filter((field) => columnVisibility[field] !== false);
     }, [columnVisibility, columns]);
 
-    const searchRequest = useMemo<SearchRequest>(() => {
-        const searchFilter = buildFilter
-            ? buildFilter(search)
-            : buildSearchFilter(search, searchFields);
-        const filter = combineFilters(searchFilter, advancedFilter);
+    const activeFilterChips = useMemo<DataTableFilterChip[]>(() => (
+        filters
+            .filter((filter) => filter.requestFilter !== false)
+            .reduce<DataTableFilterChip[]>((result, filter) => {
+                const value = appliedFilterValues[filter.id]?.trim();
+                if (!value) {
+                    return result;
+                }
 
-        return { filter, sorts, fields, page, size: pageSize };
-    }, [advancedFilter, buildFilter, fields, page, pageSize, search, searchFields, sorts]);
+                result.push({
+                    id: filter.id,
+                    label: `${filter.chipLabel ?? filter.label}: ${formatFilterChipValue(filter, value)}`,
+                    onRemove: () => {
+                        setDraftFilterValues((current) => ({ ...current, [filter.id]: "" }));
+                        setAppliedFilterValues((current) => ({ ...current, [filter.id]: "" }));
+                        setPage(0);
+                    },
+                });
+                return result;
+            }, [])
+    ), [appliedFilterValues, filters]);
+
+    const filterControls = useMemo<DataTableFilterControl[]>(() => (
+        filters.map((filter) => ({
+            ...filter,
+            value: draftFilterValues[filter.id] ?? "",
+            onChange: (value) =>
+                setDraftFilterValues((current) => ({ ...current, [filter.id]: value })),
+        }))
+    ), [draftFilterValues, filters]);
+    const popoverFilterControls = filterControls.filter((filter) => filter.placement !== "toolbar");
+    const toolbarFilterControls = useMemo<DataTableFilterControl[]>(() => (
+        filters
+            .filter((filter) => filter.placement === "toolbar")
+            .map((filter) => ({
+                ...filter,
+                value: appliedFilterValues[filter.id] ?? "",
+                onChange: (value) => {
+                    setDraftFilterValues((current) => ({ ...current, [filter.id]: value }));
+                    setAppliedFilterValues((current) => ({ ...current, [filter.id]: value }));
+                    setPage(0);
+                },
+            }))
+    ), [appliedFilterValues, filters]);
+
+    const handleApplyFilters = () => {
+        setAppliedFilterValues(draftFilterValues);
+        setPage(0);
+    };
+
+    const handleResetFilters = () => {
+        const emptyValues = Object.fromEntries(filters.map((filter) => [filter.id, ""]));
+        setDraftFilterValues(emptyValues);
+        setAppliedFilterValues(emptyValues);
+        setPage(0);
+    };
+
+    const searchRequest = useMemo<SearchRequest>(() => (
+        buildSearchRequest({
+            search,
+            searchFields,
+            buildFilter,
+            advancedFilter,
+            filters,
+            filterValues: appliedFilterValues,
+            sorts,
+            fields,
+            page,
+            size: pageSize,
+        })
+    ), [advancedFilter, appliedFilterValues, buildFilter, fields, filters, page, pageSize, search, searchFields, sorts]);
 
     const query = pageQuery(searchRequest);
     const pageResult = query.data;
@@ -235,10 +455,26 @@ export function ServerDataTable<TData, TValue>({
         setSorts(nextSorts);
         setPage(0);
     };
+    const { toolbar: providedToolbar, ...dataTableProps } = props;
+    const toolbarFilters = toolbarFilterControls.length ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {toolbarFilterControls.map((filter) => (
+                <div key={filter.id} className="flex min-w-0 items-center">
+                    {renderFilterControl(filter, "toolbar")}
+                </div>
+            ))}
+        </div>
+    ) : null;
+    const resolvedToolbar = toolbarFilters || providedToolbar ? (
+        <>
+            {toolbarFilters}
+            {providedToolbar}
+        </>
+    ) : undefined;
 
     return (
         <DataTable
-            {...props}
+            {...dataTableProps}
             serverSide
             columns={columns}
             data={pageResult?.content ?? []}
@@ -250,7 +486,15 @@ export function ServerDataTable<TData, TValue>({
             onSortingChange={handleSortingChange}
             searchValue={search}
             onSearchChange={handleSearchChange}
+            toolbar={resolvedToolbar}
             moreFilter={moreFilter}
+            filterTitle={props.filterTitle ?? (filters.length ? "Filter" : undefined)}
+            filterControls={popoverFilterControls}
+            filterActiveCount={activeFilterChips.length}
+            activeFilterChips={activeFilterChips}
+            onApplyFilters={handleApplyFilters}
+            onResetFilters={handleResetFilters}
+            onClearFilters={handleResetFilters}
             defaultPageSize={defaultPageSize}
             emptyTitle={query.isLoading ? loadingTitle : emptyTitle}
             emptyDescription={query.isError ? errorDescription : emptyDescription}
@@ -283,6 +527,19 @@ export function DataTable<TData, TValue>({
     toolbar,
     moreFilter,
     toolbarEnd,
+    filterAction,
+    filterTitle = "Filters",
+    filterControls = [],
+    filterActiveCount,
+    activeFilterChips = [],
+    onApplyFilters,
+    onResetFilters,
+    onClearFilters,
+    activeFilters,
+    entityLabel = "row(s)",
+    emptyState,
+    filteredEmptyState,
+    highlightFirstRow = false,
     actions = [],
     primaryAction,
     enableColumnSettings = false,
@@ -524,13 +781,14 @@ export function DataTable<TData, TValue>({
                     <Button
                         type="button"
                         variant="outline"
-                        size="icon"
                         title="Column settings"
                         aria-label="Column settings"
                     />
                 }
             >
-                <Settings2 className="size-4" />
+                <Columns3 className="size-4" />
+                Columns
+                <ChevronDown className="size-4" />
             </PopoverTrigger>
 
             <PopoverContent align="end" sideOffset={6} className="w-72 gap-4">
@@ -598,8 +856,61 @@ export function DataTable<TData, TValue>({
         </Button>
     ) : null;
 
+    const resolvedFilterActiveCount =
+        filterActiveCount ?? activeFilterChips.length + (globalFilter.trim() ? 1 : 0);
+    const generatedFilterAction = filterControls.length ? (
+        <Popover>
+            <PopoverTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="relative"
+                        aria-label={filterTitle}
+                    />
+                }
+            >
+                <Filter className="size-4" />
+                Filter
+                {resolvedFilterActiveCount > 0 ? (
+                    <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground shadow-sm">
+                        {resolvedFilterActiveCount}
+                    </span>
+                ) : null}
+            </PopoverTrigger>
+
+            <PopoverContent align="end" sideOffset={8} className="w-80 gap-5 p-5">
+                <PopoverHeader>
+                    <PopoverTitle className="text-base">{filterTitle}</PopoverTitle>
+                </PopoverHeader>
+
+                <div className="flex flex-col gap-4">
+                    {filterControls.map((filter) => (
+                        <label key={filter.id} className="flex flex-col gap-2 text-sm">
+                            <span className="font-medium text-muted-foreground">
+                                {filter.label}
+                            </span>
+                            {renderFilterControl(filter)}
+                        </label>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" variant="outline" onClick={onResetFilters}>
+                        Reset
+                    </Button>
+                    <Button type="button" onClick={onApplyFilters}>
+                        Apply Filter
+                    </Button>
+                </div>
+            </PopoverContent>
+        </Popover>
+    ) : null;
+
+    const resolvedFilterAction = filterAction ?? generatedFilterAction;
+
     const generatedToolbarEnd =
-        csvExportAction || visibleActions.length || columnSettingsAction || resolvedPrimaryAction ? (
+        csvExportAction || visibleActions.length || columnSettingsAction || resolvedFilterAction || resolvedPrimaryAction ? (
             <>
                 {csvExportAction}
 
@@ -617,6 +928,8 @@ export function DataTable<TData, TValue>({
                 ))}
 
                 {columnSettingsAction}
+
+                {resolvedFilterAction}
 
                 {resolvedPrimaryAction ? (
                     resolvedPrimaryAction.items?.length ? (
@@ -668,20 +981,6 @@ export function DataTable<TData, TValue>({
     const resolvedToolbarEnd = toolbarEnd ?? generatedToolbarEnd;
 
     const currentPageIndex = table.getState().pagination.pageIndex;
-    const [inputPage, setInputPage] = useState(String(currentPageIndex + 1));
-
-    useEffect(() => {
-        setInputPage(String(currentPageIndex + 1));
-    }, [currentPageIndex]);
-
-    const handleGoToPage = (value: string) => {
-        const val = Number(value);
-        if (val >= 1 && val <= table.getPageCount()) {
-            table.setPageIndex(val - 1);
-        } else {
-            setInputPage(String(table.getState().pagination.pageIndex + 1));
-        }
-    };
 
     const totalCount = serverSide
         ? (totalRows ?? 0)
@@ -699,11 +998,72 @@ export function DataTable<TData, TValue>({
         }
     };
 
+    const pageCount = table.getPageCount();
+    const pageNumbers = Array.from({ length: pageCount }, (_, index) => index)
+        .filter((index) => pageCount <= 5 || Math.abs(index - currentPageIndex) <= 1 || index === 0 || index === pageCount - 1);
+    const visibleRowCount = table.getRowModel().rows.length;
+    const firstVisibleRow = totalCount === 0 ? 0 : currentPageIndex * currentPageSize + 1;
+    const lastVisibleRow = totalCount === 0 ? 0 : Math.min(totalCount, firstVisibleRow + visibleRowCount - 1);
+    const searchChip = globalFilter.trim()
+        ? {
+            id: "search",
+            label: `Search: ${globalFilter.trim()}`,
+            onRemove: () => handleSearchChange(""),
+        }
+        : undefined;
+    const resolvedActiveFilterChips = [
+        ...(searchChip ? [searchChip] : []),
+        ...activeFilterChips,
+    ];
+    const hasActiveConstraints = resolvedActiveFilterChips.length > 0;
+    const handleClearAllFilters = () => {
+        handleSearchChange("");
+        onClearFilters?.();
+    };
+    const generatedActiveFilters = hasActiveConstraints ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-primary/15 bg-primary/5 px-4 py-3 text-sm sm:flex-row sm:items-center">
+            <span className="font-medium text-foreground">Active filters:</span>
+
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+                {resolvedActiveFilterChips.map((chip) => (
+                    <span
+                        key={chip.id}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                    >
+                        {chip.label}
+                        <button
+                            type="button"
+                            className="rounded-sm transition hover:bg-primary/10"
+                            onClick={chip.onRemove}
+                            aria-label={`Remove ${chip.label}`}
+                        >
+                            <X className="size-3.5" />
+                        </button>
+                    </span>
+                ))}
+            </div>
+
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary"
+                onClick={handleClearAllFilters}
+            >
+                Clear all
+            </Button>
+        </div>
+    ) : null;
+    const resolvedActiveFilters = activeFilters ?? generatedActiveFilters;
+    const resolvedEmptyState = hasActiveConstraints
+        ? (filteredEmptyState ?? emptyState)
+        : emptyState;
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="relative w-full sm:w-72">
+                    <div className="relative w-full sm:w-96">
                         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={globalFilter}
@@ -734,7 +1094,9 @@ export function DataTable<TData, TValue>({
                 ) : null}
             </div>
 
-            <div className="overflow-hidden rounded-md border">
+            {resolvedActiveFilters}
+
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
                 <Table containerClassName="max-h-[58vh] overflow-auto">
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -743,7 +1105,7 @@ export function DataTable<TData, TValue>({
                                     <TableHead
                                         key={header.id}
                                         className={[
-                                            "sticky top-0 z-10 bg-background",
+                                            "sticky top-0 z-20 bg-muted text-xs font-semibold tracking-normal text-muted-foreground shadow-[inset_0_-1px_0_var(--border)]",
                                             getColumnClassName(header.column.columnDef),
                                         ]
                                             .filter(Boolean)
@@ -758,8 +1120,8 @@ export function DataTable<TData, TValue>({
 
                     <TableBody>
                         {table.getRowModel().rows.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id}>
+                            table.getRowModel().rows.map((row, index) => (
+                                <TableRow key={row.id} className={highlightFirstRow && index === 0 ? "bg-primary/5 hover:bg-primary/10" : undefined}>
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell
                                             key={cell.id}
@@ -779,25 +1141,30 @@ export function DataTable<TData, TValue>({
                             <TableRow>
                                 <TableCell
                                     colSpan={table.getVisibleLeafColumns().length}
-                                    className="h-64"
+                                    className="h-80"
                                 >
-                                    <Empty>
+                                    <Empty className="border-0">
                                         <EmptyHeader>
-                                            <EmptyMedia variant="icon">
-                                                <SearchX className="size-6" />
+                                            <EmptyMedia
+                                                variant="icon"
+                                                className="size-20 rounded-full bg-primary/10 text-primary ring-8 ring-primary/5"
+                                            >
+                                                {resolvedEmptyState?.icon ?? <SearchX className="size-9" />}
                                             </EmptyMedia>
 
-                                            <EmptyTitle>{emptyTitle}</EmptyTitle>
+                                            <EmptyTitle>
+                                                {resolvedEmptyState?.title ?? emptyTitle}
+                                            </EmptyTitle>
 
                                             <EmptyDescription>
-                                                {emptyDescription}
+                                                {resolvedEmptyState?.description ?? emptyDescription}
                                             </EmptyDescription>
                                         </EmptyHeader>
 
-                                        {emptyAction ? (
+                                        {resolvedEmptyState?.actions ?? emptyAction ? (
                                             <EmptyContent>
                                                 <div className="flex flex-wrap items-center justify-center gap-2">
-                                                    {emptyAction}
+                                                    {resolvedEmptyState?.actions ?? emptyAction}
                                                 </div>
                                             </EmptyContent>
                                         ) : null}
@@ -829,8 +1196,8 @@ export function DataTable<TData, TValue>({
                     </div>
 
                     <p>
-                        Showing {table.getRowModel().rows.length} of{" "}
-                        {totalCount} row(s).
+                        Showing {firstVisibleRow} to {lastVisibleRow} of{" "}
+                        {totalCount} {entityLabel}
                     </p>
                 </div>
 
@@ -855,22 +1222,28 @@ export function DataTable<TData, TValue>({
                         <ChevronLeft className="size-4" />
                     </Button>
 
-                    <div className="flex items-center gap-1.5 text-sm">
-                        <span className="text-muted-foreground">Page</span>
-                        <Input
-                            type="number"
-                            min={1}
-                            max={table.getPageCount()}
-                            value={inputPage}
-                            onChange={(e) => setInputPage(e.target.value)}
-                            onBlur={(e) => handleGoToPage(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") handleGoToPage(inputPage);
-                            }}
-                            className="h-8 w-14 text-center"
-                        />
-                        <span className="text-muted-foreground">of {table.getPageCount()}</span>
-                    </div>
+                    {pageNumbers.map((pageNumber, index) => {
+                        const previousPageNumber = pageNumbers[index - 1];
+                        const hasGap = previousPageNumber !== undefined && pageNumber - previousPageNumber > 1;
+
+                        return (
+                            <div key={pageNumber} className="flex items-center gap-2">
+                                {hasGap ? (
+                                    <span className="px-1 text-muted-foreground">...</span>
+                                ) : null}
+
+                                <Button
+                                    type="button"
+                                    variant={pageNumber === currentPageIndex ? "default" : "outline"}
+                                    size="icon-sm"
+                                    onClick={() => table.setPageIndex(pageNumber)}
+                                    aria-current={pageNumber === currentPageIndex ? "page" : undefined}
+                                >
+                                    {pageNumber + 1}
+                                </Button>
+                            </div>
+                        );
+                    })}
 
                     <Button
                         type="button"
@@ -886,7 +1259,7 @@ export function DataTable<TData, TValue>({
                         type="button"
                         variant="outline"
                         size="icon-sm"
-                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                        onClick={() => table.setPageIndex(pageCount - 1)}
                         disabled={!table.getCanNextPage()}
                     >
                         <ChevronLast className="size-4" />

@@ -22,6 +22,7 @@ type PageHeaderProps = {
     title: string;
     description?: string;
     className?: string;
+    icon?: ReactNode;
     breadcrumbs?: BreadcrumbItem[];
     breadcrumbLabels?: Record<string, string | undefined>;
     actions?: ReactNode;
@@ -46,6 +47,7 @@ export function PageHeader({
     title,
     description,
     className,
+    icon,
     breadcrumbs,
     breadcrumbLabels,
     actions,
@@ -101,15 +103,23 @@ export function PageHeader({
             </nav>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                    <h1 className="text-2xl font-semibold tracking-normal text-foreground">
-                        {title}
-                    </h1>
-                    {description ? (
-                        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                            {description}
-                        </p>
+                <div className="flex min-w-0 items-start gap-3">
+                    {icon ? (
+                        <div className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+                            {icon}
+                        </div>
                     ) : null}
+
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-semibold tracking-normal text-foreground">
+                            {title}
+                        </h1>
+                        {description ? (
+                            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                                {description}
+                            </p>
+                        ) : null}
+                    </div>
                 </div>
 
                 {actions ? (

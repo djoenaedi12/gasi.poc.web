@@ -1,5 +1,5 @@
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
@@ -219,7 +219,7 @@ export function LookupPicker<TLookupData = LookupOption>(
                     variant="outline"
                     disabled={disabled}
                     aria-invalid={props["aria-invalid"]}
-                    className="w-full justify-start"
+                    className="h-10 w-full justify-start bg-background shadow-xs"
                     onClick={() => handleOpenChange(true)}
                 >
                     {icon}
@@ -251,10 +251,10 @@ export function LookupPicker<TLookupData = LookupOption>(
             </div>
 
             <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent className="sm:max-w-2xl">
+                <DialogContent className="gap-5 sm:max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>{title}</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-xl">{title}</DialogTitle>
+                        <DialogDescription className="text-sm">
                             Search and choose from the lookup table.
                         </DialogDescription>
                     </DialogHeader>
@@ -266,12 +266,34 @@ export function LookupPicker<TLookupData = LookupOption>(
                             searchFields={searchFields}
                             buildFilter={buildFilter}
                             loadingTitle={`Loading ${title}...`}
+                            entityLabel="items"
+                            emptyState={{
+                                icon: <Search className="size-9" />,
+                                title: emptyMessage,
+                                description: "There are no lookup options available yet.",
+                            }}
+                            filteredEmptyState={{
+                                icon: <Search className="size-9" />,
+                                title: "No matching options found",
+                                description: "Try another keyword or clear the active filters.",
+                            }}
                         />
                     ) : (
                         <DataTable
                             {...tableProps}
                             data={options}
                             searchKey="label"
+                            entityLabel="items"
+                            emptyState={{
+                                icon: <Search className="size-9" />,
+                                title: emptyMessage,
+                                description: "There are no lookup options available yet.",
+                            }}
+                            filteredEmptyState={{
+                                icon: <Search className="size-9" />,
+                                title: "No matching options found",
+                                description: "Try another keyword or clear the active filters.",
+                            }}
                         />
                     )}
                 </DialogContent>

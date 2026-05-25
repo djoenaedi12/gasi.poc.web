@@ -10,9 +10,9 @@ import { FormFieldLabel } from "./FormFieldLabel";
 import {
     Field,
     FieldDescription,
-    FieldError,
     FieldLabel,
 } from "../ui/field";
+import { FormFieldError } from "./FormFieldError";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { cn } from "../../lib/utils";
 
@@ -119,7 +119,7 @@ export function FormRadioGroup<TFieldValues extends FieldValues>({
                 <FieldDescription>{description}</FieldDescription>
             ) : null}
 
-            {error ? <FieldError>{error.message as string}</FieldError> : null}
+            {error ? <FormFieldError error={error} /> : null}
         </Field>
     );
 }

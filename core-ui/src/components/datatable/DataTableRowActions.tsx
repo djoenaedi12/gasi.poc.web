@@ -1,5 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Edit, Eye, MoreHorizontal, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { ConfirmDialog } from "../molecules/ConfirmDialog";
@@ -25,6 +26,7 @@ type DataTableRowActionsOptions<TData> = {
     deleteLabel?: string;
     deleteTitle?: string;
     deleteDescription?: string;
+    presentation?: "menu" | "inline";
 };
 
 export function DataTableRowActions<TData>({
@@ -41,54 +43,131 @@ export function DataTableRowActions<TData>({
     deleteLabel = "Delete",
     deleteTitle,
     deleteDescription = "This action cannot be undone.",
+    presentation = "menu",
 }: DataTableRowActionsOptions<TData> & {
     row: TData;
 }) {
     const id = getRowId(row);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const deleteDialog = showDelete ? (
+        <ConfirmDialog
+            destructive
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            title={deleteTitle ?? `Delete ${entityName}?`}
+            description={deleteDescription}
+            confirmLabel={deleteLabel}
+            onConfirm={() => onDelete?.(id, row)}
+        />
+    ) : null;
 
-    return (
-        <div className="flex justify-end">
-            <DropdownMenu>
-                <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" />}>
-                    <MoreHorizontal className="size-4" />
-                    <span className="sr-only">Open row actions</span>
-                </DropdownMenuTrigger>
+    if (presentation === "inline") {
+        return (
+            <>
+                <div className="flex items-center justify-end gap-1.5">
+                    {showView ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            render={<Link to={`${basePath}/${id}`} />}
+                            aria-label={viewLabel}
+                            title={viewLabel}
+                        >
+                            <Eye className="size-4" />
+                        </Button>
+                    ) : null}
 
-                <DropdownMenuContent align="end" sideOffset={6} className="w-40">
-                    <DropdownMenuGroup>
-                        {showView ? (
-                            <DropdownMenuItem render={<Link to={`${basePath}/${id}`} />}>
-                                <Eye className="size-4" />
-                                {viewLabel}
-                            </DropdownMenuItem>
-                        ) : null}
+                    {showEdit ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            render={<Link to={`${basePath}/${id}/edit`} />}
+                            aria-label={editLabel}
+                            title={editLabel}
+                        >
+                            <Edit className="size-4" />
+                        </Button>
+                    ) : null}
 
-                        {showEdit ? (
-                            <DropdownMenuItem render={<Link to={`${basePath}/${id}/edit`} />}>
-                                <Edit className="size-4" />
-                                {editLabel}
-                            </DropdownMenuItem>
-                        ) : null}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    aria-label="More actions"
+                                    title="More actions"
+                                />
+                            }
+                        >
+                            <MoreHorizontal className="size-4" />
+                        </DropdownMenuTrigger>
 
-                        {showDelete ? (
-                            <ConfirmDialog
-                                destructive
-                                title={deleteTitle ?? `Delete ${entityName}?`}
-                                description={deleteDescription}
-                                confirmLabel={deleteLabel}
-                                trigger={
-                                    <DropdownMenuItem variant="destructive" disabled={!onDelete}>
+                        <DropdownMenuContent align="end" sideOffset={6} className="w-40">
+                            <DropdownMenuGroup>
+                                {showDelete ? (
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={!onDelete}
+                                        onClick={() => setDeleteDialogOpen(true)}
+                                    >
                                         <Trash2 className="size-4" />
                                         {deleteLabel}
                                     </DropdownMenuItem>
-                                }
-                                onConfirm={() => onDelete?.(id, row)}
-                            />
-                        ) : null}
-                    </DropdownMenuGroup>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
+                                ) : null}
+                            </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                {deleteDialog}
+            </>
+        );
+    }
+
+    return (
+        <>
+            <div className="flex justify-end">
+                <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon-sm" />}>
+                        <MoreHorizontal className="size-4" />
+                        <span className="sr-only">Open row actions</span>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end" sideOffset={6} className="w-40">
+                        <DropdownMenuGroup>
+                            {showView ? (
+                                <DropdownMenuItem render={<Link to={`${basePath}/${id}`} />}>
+                                    <Eye className="size-4" />
+                                    {viewLabel}
+                                </DropdownMenuItem>
+                            ) : null}
+
+                            {showEdit ? (
+                                <DropdownMenuItem render={<Link to={`${basePath}/${id}/edit`} />}>
+                                    <Edit className="size-4" />
+                                    {editLabel}
+                                </DropdownMenuItem>
+                            ) : null}
+
+                            {showDelete ? (
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    disabled={!onDelete}
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                >
+                                    <Trash2 className="size-4" />
+                                    {deleteLabel}
+                                </DropdownMenuItem>
+                            ) : null}
+                        </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            {deleteDialog}
+        </>
     );
 }
 
@@ -97,11 +176,14 @@ export function getDataTableRowActionsColumn<TData>(
 ): ColumnDef<TData> {
     return {
         id: "actions",
-        header: () => <span className="sr-only">Actions</span>,
+        header: options.presentation === "inline" ? "Actions" : () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
             <DataTableRowActions row={row.original} {...options} />
         ),
         enableSorting: false,
         enableHiding: false,
+        meta: {
+            className: "text-right",
+        },
     };
 }

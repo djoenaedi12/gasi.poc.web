@@ -13,6 +13,7 @@ export type UploadRowStatus = "RAW" | "VALID" | "INVALID" | "COMMITTED";
 
 export type DataUploadSummary = {
     id: string;
+    instructionNo?: string;
     createdAt?: string;
     fileName: string;
     totalRows: number;

@@ -1,4 +1,5 @@
 import type { UploadRowStatus } from "../../types/dataUpload.types";
+import { useI18n } from "../../lib/i18n";
 import {
     Select,
     SelectContent,
@@ -13,17 +14,19 @@ type UploadRowStatusFilterProps = {
 };
 
 export function UploadRowStatusFilter({ value, onChange }: UploadRowStatusFilterProps) {
+    const { t } = useI18n();
+
     return (
         <Select value={value} onValueChange={(v) => onChange(v as UploadRowStatus | "ALL")}>
             <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("dataUpload.fields.status")} />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="ALL">All status</SelectItem>
-                <SelectItem value="RAW">RAW</SelectItem>
-                <SelectItem value="VALID">VALID</SelectItem>
-                <SelectItem value="INVALID">INVALID</SelectItem>
-                <SelectItem value="COMMITTED">COMMITTED</SelectItem>
+                <SelectItem value="ALL">{t("dataUpload.filters.allStatuses")}</SelectItem>
+                <SelectItem value="RAW">{t("dataUpload.status.raw")}</SelectItem>
+                <SelectItem value="VALID">{t("dataUpload.status.valid")}</SelectItem>
+                <SelectItem value="INVALID">{t("dataUpload.status.invalid")}</SelectItem>
+                <SelectItem value="COMMITTED">{t("dataUpload.status.committed")}</SelectItem>
             </SelectContent>
         </Select>
     );

@@ -34,9 +34,8 @@ export function AppRoutes() {
   const authGuard    = guardExts[0]?.guard ?? null;
   const Guard        = authGuard?.component ?? null;
 
-  // Pisah auth routes (login, dll) dari protected routes
-  const authRoutes      = pluginRoutes.filter((r) => r.path === '/login' || r.path.startsWith('/auth'));
-  const protectedRoutes = pluginRoutes.filter((r) => r.path !== '/login' && !r.path.startsWith('/auth'));
+  const blankRoutes = pluginRoutes.filter((r) => r.public || r.layout === 'blank');
+  const dashboardRoutes = pluginRoutes.filter((r) => !r.public && r.layout !== 'blank');
 
   const renderProtectedRoute = (route: typeof pluginRoutes[0]) => {
     const Comp       = route.component;
@@ -62,10 +61,11 @@ export function AppRoutes() {
 
   return (
     <Routes>
-      {/* Auth routes — tidak perlu guard */}
-      {authRoutes.map((r) => (
-        <Route key={r.path} path={r.path} element={<r.component />} />
-      ))}
+      {/* Blank/public routes — tidak perlu dashboard layout atau guard */}
+      {blankRoutes.map((route) => {
+        const Comp = route.component;
+        return <Route key={route.path} path={route.path} element={<Comp />} />;
+      })}
 
       {/* Error pages */}
       <Route path="/403" element={<ForbiddenPage />} />
@@ -75,7 +75,7 @@ export function AppRoutes() {
       <Route element={<DashboardLayout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        {protectedRoutes.map(renderProtectedRoute)}
+        {dashboardRoutes.map(renderProtectedRoute)}
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

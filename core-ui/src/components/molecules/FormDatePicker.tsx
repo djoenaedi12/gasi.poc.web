@@ -14,8 +14,8 @@ import { Calendar } from "../ui/calendar";
 import {
     Field,
     FieldDescription,
-    FieldError,
 } from "../ui/field";
+import { FormFieldError } from "./FormFieldError";
 import {
     Popover,
     PopoverContent,
@@ -146,7 +146,7 @@ export function FormDatePicker<TFieldValues extends FieldValues>({
                 <FieldDescription>{description}</FieldDescription>
             ) : null}
 
-            {error ? <FieldError>{error.message as string}</FieldError> : null}
+            {error ? <FormFieldError error={error} /> : null}
         </Field>
     );
 }

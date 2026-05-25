@@ -1,14 +1,15 @@
 import type { PluginDefinition, PluginExtension } from '../types/pluginDefinition.types';
 import type { ExtensionPoint } from '../types/extensionPoints.types';
 
-type PluginState = 'registered' | 'started' | 'stopped';
+export type PluginState = 'registered' | 'starting' | 'started' | 'stopping' | 'stopped' | 'error';
 
-interface PluginEntry extends PluginDefinition {
+export interface PluginEntry extends PluginDefinition {
   state: PluginState;
+  error?: unknown;
 }
 
-type RegistryEvent = 'registered' | 'started' | 'stopped';
-type EventListener = (event: { type: RegistryEvent; pluginId: string }) => void;
+type RegistryEvent = 'registered' | 'starting' | 'started' | 'stopping' | 'stopped' | 'error';
+type EventListener = (event: { type: RegistryEvent; pluginId: string; error?: unknown }) => void;
 
 /**
  * Mengelola lifecycle semua plugin.
@@ -28,32 +29,53 @@ export class PluginRegistry {
     this.emit('registered', plugin.id);
   }
 
-  start(pluginId: string): void {
+  async start(pluginId: string): Promise<void> {
     const plugin = this.plugins.get(pluginId);
     if (!plugin) throw new Error(`Plugin ${pluginId} tidak ditemukan`);
-    if (plugin.state === 'started') return;
+    if (plugin.state === 'started' || plugin.state === 'starting') return;
 
-    plugin.state = 'started';
-    plugin.extensions?.forEach(ext => {
-      const list = this.extensions.get(ext.point) ?? [];
-      this.extensions.set(ext.point, [...list, { ...ext, pluginId } as any]);
-    });
+    plugin.state = 'starting';
+    plugin.error = undefined;
+    this.emit('starting', pluginId);
 
-    plugin.onStart?.();
-    this.emit('started', pluginId);
+    try {
+      await plugin.onStart?.();
+
+      plugin.extensions?.forEach(ext => {
+        const list = this.extensions.get(ext.point) ?? [];
+        this.extensions.set(ext.point, [...list, { ...ext, pluginId }]);
+      });
+
+      plugin.state = 'started';
+      this.emit('started', pluginId);
+    } catch (error) {
+      plugin.state = 'error';
+      plugin.error = error;
+      this.removePluginExtensions(pluginId);
+      this.emit('error', pluginId, error);
+      throw error;
+    }
   }
 
-  stop(pluginId: string): void {
+  async stop(pluginId: string): Promise<void> {
     const plugin = this.plugins.get(pluginId);
     if (!plugin) return;
+    if (plugin.state === 'stopping' || plugin.state === 'stopped') return;
 
-    plugin.state = 'stopped';
-    this.extensions.forEach((exts, point) => {
-      this.extensions.set(point, exts.filter((e: any) => e.pluginId !== pluginId));
-    });
+    plugin.state = 'stopping';
+    this.emit('stopping', pluginId);
 
-    plugin.onStop?.();
-    this.emit('stopped', pluginId);
+    try {
+      await plugin.onStop?.();
+      this.removePluginExtensions(pluginId);
+      plugin.state = 'stopped';
+      this.emit('stopped', pluginId);
+    } catch (error) {
+      plugin.state = 'error';
+      plugin.error = error;
+      this.emit('error', pluginId, error);
+      throw error;
+    }
   }
 
   getExtensions(point: ExtensionPoint): PluginExtension[] {
@@ -75,8 +97,14 @@ export class PluginRegistry {
     };
   }
 
-  private emit(type: RegistryEvent, pluginId: string): void {
-    this.listeners.forEach(fn => fn({ type, pluginId }));
+  private removePluginExtensions(pluginId: string): void {
+    this.extensions.forEach((exts, point) => {
+      this.extensions.set(point, exts.filter((ext) => ext.pluginId !== pluginId));
+    });
+  }
+
+  private emit(type: RegistryEvent, pluginId: string, error?: unknown): void {
+    this.listeners.forEach(fn => fn({ type, pluginId, error }));
   }
 }
 

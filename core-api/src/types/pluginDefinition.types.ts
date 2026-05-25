@@ -22,6 +22,20 @@ export interface RouteDefinition {
   /** React component yang di-render untuk route ini */
   component: ComponentType<any>;
   /**
+   * Route publik tidak dibungkus auth guard.
+   * Gunakan untuk login, forgot password, callback auth, dll.
+   */
+  public?: boolean;
+  /**
+   * Layout host yang diinginkan.
+   * Default: 'dashboard'. Route auth biasanya memakai 'blank'.
+   */
+  layout?: 'dashboard' | 'blank';
+  /** Judul opsional untuk menu, breadcrumb, tab browser, atau observability. */
+  title?: string;
+  /** Urutan opsional ketika host perlu menyusun route/menu dari plugin. */
+  order?: number;
+  /**
    * Resource name untuk permission check.
    * Contoh: 'employee', 'payroll', 'benefit'
    * Permission di-generate otomatis: {resource}:{action}
@@ -65,6 +79,8 @@ export interface PluginExtension {
   routes?: RouteDefinition[];
   /** Auth guard (untuk point: 'auth_guard') */
   guard?: AuthGuardExtension;
+  /** ID plugin pemilik extension. Diisi otomatis oleh PluginRegistry saat start. */
+  pluginId?: string;
 }
 
 /**

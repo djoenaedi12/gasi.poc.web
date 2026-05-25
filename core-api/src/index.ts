@@ -9,3 +9,4 @@ export type {
   PluginExtension,
 } from './types/pluginDefinition.types';
 export { PluginRegistry, pluginRegistry } from './registry/pluginRegistry';
+export type { PluginEntry, PluginState } from './registry/pluginRegistry';

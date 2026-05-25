@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
-import type { GenericFilter } from "../../types/api.types";
+import type { GenericFilter, SearchRequest, SortOrder } from "../../types/api.types";
+import type { DataTableFilterField } from "./dataTableTypes";
 
 export type ColumnVisibilityState = Record<string, boolean>;
 
@@ -72,6 +73,102 @@ export function combineFilters(
         type: "and",
         filters: activeFilters,
     };
+}
+
+export function buildDataTableFilter(
+    filters: DataTableFilterField[],
+    values: Record<string, string>,
+): GenericFilter | undefined {
+    const simpleFilters = filters
+        .filter((filter) => filter.requestFilter !== false)
+        .reduce<GenericFilter[]>((result, filter) => {
+            const value = values[filter.id]?.trim();
+            if (!value) {
+                return result;
+            }
+
+            if (filter.type === "date-range" && filter.range) {
+                const [from, to] = value.split("..");
+
+                if (from) {
+                    result.push({
+                        type: "simple",
+                        field: filter.range.from.field,
+                        operator: filter.range.from.operator,
+                        value: filter.range.from.transformValue
+                            ? filter.range.from.transformValue(from)
+                            : from,
+                    });
+                }
+
+                if (to) {
+                    result.push({
+                        type: "simple",
+                        field: filter.range.to.field,
+                        operator: filter.range.to.operator,
+                        value: filter.range.to.transformValue
+                            ? filter.range.to.transformValue(to)
+                            : to,
+                    });
+                }
+
+                return result;
+            }
+
+            if (!filter.field) {
+                return result;
+            }
+
+            result.push({
+                type: "simple",
+                field: filter.field,
+                operator: filter.operator ?? "LIKE",
+                value: filter.transformValue ? filter.transformValue(value) : value,
+            });
+            return result;
+        }, []);
+
+    if (!simpleFilters.length) {
+        return undefined;
+    }
+
+    return simpleFilters.length === 1
+        ? simpleFilters[0]
+        : { type: "and", filters: simpleFilters };
+}
+
+export type BuildSearchRequestOptions = {
+    search: string;
+    searchFields?: string[];
+    buildFilter?: (search: string) => GenericFilter | undefined;
+    advancedFilter?: GenericFilter;
+    filters?: DataTableFilterField[];
+    filterValues?: Record<string, string>;
+    sorts?: SortOrder[];
+    fields?: string[];
+    page?: number;
+    size?: number;
+};
+
+export function buildSearchRequest({
+    search,
+    searchFields,
+    buildFilter,
+    advancedFilter,
+    filters = [],
+    filterValues = {},
+    sorts = [],
+    fields,
+    page,
+    size,
+}: BuildSearchRequestOptions): SearchRequest {
+    const searchFilter = buildFilter
+        ? buildFilter(search)
+        : buildSearchFilter(search, searchFields);
+    const requestFilter = buildDataTableFilter(filters, filterValues);
+    const filter = combineFilters(searchFilter, advancedFilter, requestFilter);
+
+    return { filter, sorts, fields, page, size };
 }
 
 export function getColumnFieldIds<TData, TValue>(
