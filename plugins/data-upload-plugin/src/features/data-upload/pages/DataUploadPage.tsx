@@ -1,19 +1,18 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, Check, CheckCircle2, Clock3, Eye, FileText, FileUp, History, Info, RefreshCw, SearchX, Upload } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
-import type { QueryKey } from "@tanstack/react-query";
 
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { Badge } from "@gasi/core-ui";
+import { Button } from "@gasi/core-ui";
 import {
     Card,
     CardContent,
     CardFooter,
-} from "../ui/card";
-import { ServerDataTable } from "../datatable/DataTable";
-import { DataUploadInputPanel, type DataUploadSource } from "../molecules/DataUploadInputPanel";
-import { PageHeader } from "../molecules/PageHeader";
-import { Stepper } from "../molecules/Stepper";
+} from "@gasi/core-ui";
+import { ServerDataTable } from "@gasi/core-ui";
+import { DataUploadInputPanel, type DataUploadSource } from "../components/DataUploadInputPanel";
+import { PageHeader } from "@gasi/core-ui";
+import { Stepper } from "@gasi/core-ui";
 import {
     dataUploadQueryKeys,
     useCommitDataUpload,
@@ -22,16 +21,16 @@ import {
     useDataUploadRowsPage,
     useDownloadDataUploadTemplate,
     useValidateDataUpload,
-} from "../../hooks/useDataUpload";
-import { useQueryClient } from "@tanstack/react-query";
-import type { SearchRequest } from "../../types/api.types";
+} from "../hooks/useDataUpload";
+import { useQueryClient } from "@gasi/core-ui";
+import type { QueryKey, SearchRequest } from "@gasi/core-ui";
 import type {
     DataUploadRowSummary,
     DataUploadSummary,
-} from "../../types/dataUpload.types";
-import { formatUploadRowStatus, formatUploadRows, formatUploadStatus, uploadStatusVariant } from "../../lib/dataUploadUtils";
-import { useI18n, type Translate } from "../../lib/i18n";
-import { appToast } from "../../lib/toast";
+} from "../types/dataUpload.types";
+import { formatUploadRowStatus, formatUploadRows, formatUploadStatus, uploadStatusVariant } from "../lib/dataUploadUtils";
+import { useI18n, type Translate } from "@gasi/core-ui";
+import { appToast } from "@gasi/core-ui";
 
 type DataUploadPageProps = {
     resource: string;
@@ -43,6 +42,7 @@ type DataUploadPageProps = {
     onBack: () => void;
     initialUploadId?: string;
     historyLabel?: string;
+    breadcrumbs?: { label: string; href?: string }[];
     onHistory?: () => void;
     onViewRow?: (uploadId: string, rowId: string) => void;
     invalidateQueryKey?: QueryKey;
@@ -58,6 +58,7 @@ export function DataUploadPage({
     templateUrl,
     initialUploadId,
     historyLabel,
+    breadcrumbs,
     onHistory,
     onViewRow,
     invalidateQueryKey,
@@ -307,6 +308,7 @@ export function DataUploadPage({
                 title={title ?? t("dataUpload.titles.main")}
                 description={description ?? t("dataUpload.descriptions.main")}
                 icon={<FileUp className="size-5" />}
+                breadcrumbs={breadcrumbs}
                 actions={
                     onHistory ? (
                         <Button type="button" variant="outline" onClick={onHistory}>

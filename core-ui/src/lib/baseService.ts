@@ -13,6 +13,11 @@ export function createBaseService<TSummary, TDetail, TCreate, TUpdate>(basePath:
                 .post<ApiResponse<PageResult<TSummary>>>(`${basePath}/search/page`, request)
                 .then((r) => r.data.data),
 
+        lookupPage: (request: SearchRequest = {}) =>
+            api
+                .post<ApiResponse<PageResult<TSummary>>>(`${basePath}/lookup/search/page`, request)
+                .then((r) => r.data.data),
+
         detail: (id: string) =>
             api
                 .get<ApiResponse<TDetail>>(`${basePath}/${id}`)

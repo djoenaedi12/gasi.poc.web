@@ -19,12 +19,36 @@ export type LookupOption = {
     label: string;
     value: string;
     description?: string;
+    meta?: Record<string, unknown>;
+};
+
+export type LookupDisplayColumn = {
+    key: string;
+    header: ReactNode;
+};
+
+export type LookupPreset<TLookupData = LookupOption> = {
+    options?: LookupOption[];
+    selectedOptions?: LookupOption[];
+    displayColumns?: LookupDisplayColumn[];
+    pageQuery?: (
+        request: SearchRequest,
+    ) => UseQueryResult<PageResult<TLookupData> | undefined, unknown>;
+    mapOption?: (item: TLookupData) => LookupOption;
+    serverSide?: boolean;
+    searchFields?: string[];
+    buildFilter?: (search: string) => GenericFilter | undefined;
+    placeholder?: string;
+    searchPlaceholder?: string;
+    emptyMessage?: string;
 };
 
 type LookupPickerBaseProps<TLookupData = LookupOption> = {
     title: string;
+    lookup?: LookupPreset<TLookupData>;
     options?: LookupOption[];
     selectedOptions?: LookupOption[];
+    displayColumns?: LookupDisplayColumn[];
     pageQuery?: (
         request: SearchRequest,
     ) => UseQueryResult<PageResult<TLookupData> | undefined, unknown>;
@@ -63,24 +87,27 @@ type LookupPickerProps<TLookupData = LookupOption> =
 export function LookupPicker<TLookupData = LookupOption>(
     props: LookupPickerProps<TLookupData>,
 ) {
+    const lookup = props.lookup ?? {};
     const {
-        options = [],
-        selectedOptions: controlledSelectedOptions = [],
-        pageQuery,
-        mapOption,
-        serverSide = true,
-        searchFields = ["label"],
-        buildFilter,
+        options = lookup.options ?? [],
+        selectedOptions: controlledSelectedOptions = lookup.selectedOptions ?? [],
+        displayColumns = lookup.displayColumns ?? [],
+        pageQuery = lookup.pageQuery,
+        mapOption = lookup.mapOption,
+        serverSide = lookup.serverSide ?? true,
+        searchFields = lookup.searchFields ?? ["label"],
+        buildFilter = lookup.buildFilter,
         title,
-        placeholder = "Select item",
-        searchPlaceholder = "Search...",
-        emptyMessage = "No data found.",
+        placeholder = lookup.placeholder ?? "Select item",
+        searchPlaceholder = lookup.searchPlaceholder ?? "Search...",
+        emptyMessage = lookup.emptyMessage ?? "No data found.",
         icon,
         disabled,
         className,
     } = props;
     const [open, setOpen] = useState(false);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+    const [localSelectedOptions, setLocalSelectedOptions] = useState<LookupOption[]>([]);
 
     const selectedValues = props.multiple
         ? props.value ?? []
@@ -89,8 +116,8 @@ export function LookupPicker<TLookupData = LookupOption>(
             : [];
 
     const lookupOptions = useMemo(
-        () => [...controlledSelectedOptions, ...options],
-        [controlledSelectedOptions, options],
+        () => [...controlledSelectedOptions, ...localSelectedOptions, ...options],
+        [controlledSelectedOptions, localSelectedOptions, options],
     );
 
     const selectedOptions = lookupOptions.filter((option, index) =>
@@ -118,23 +145,38 @@ export function LookupPicker<TLookupData = LookupOption>(
         : selectedOptions[0]?.label ?? placeholder;
 
     const columns = useMemo<ColumnDef<LookupOption>[]>(
-        () => [
-            {
-                accessorKey: "label",
-                header: "Name",
-                cell: ({ row }) => (
-                    <div className="min-w-0">
-                        <p className="truncate font-medium">{row.original.label}</p>
-                        {row.original.description ? (
-                            <p className="mt-1 truncate text-sm text-muted-foreground">
-                                {row.original.description}
-                            </p>
-                        ) : null}
-                    </div>
-                ),
-            },
-        ],
-        [],
+        () => {
+            if (displayColumns.length) {
+                return displayColumns.map((column) => ({
+                    id: column.key,
+                    accessorFn: (option) => String(option.meta?.[column.key] ?? ""),
+                    header: () => <>{column.header}</>,
+                    cell: ({ row }) => (
+                        <span className="block max-w-64 truncate">
+                            {String(row.original.meta?.[column.key] ?? "")}
+                        </span>
+                    ),
+                }));
+            }
+
+            return [
+                {
+                    accessorKey: "label",
+                    header: "Name",
+                    cell: ({ row }) => (
+                        <div className="min-w-0">
+                            <p className="truncate font-medium">{row.original.label}</p>
+                            {row.original.description ? (
+                                <p className="mt-1 truncate text-sm text-muted-foreground">
+                                    {row.original.description}
+                                </p>
+                            ) : null}
+                        </div>
+                    ),
+                },
+            ];
+        },
+        [displayColumns],
     );
 
     const handleRowSelectionChange = (selection: RowSelectionState) => {
@@ -157,7 +199,17 @@ export function LookupPicker<TLookupData = LookupOption>(
 
     const handleClear = () => {
         props.onClear?.();
+        setLocalSelectedOptions([]);
         setRowSelection({});
+    };
+
+    const rememberSelectedOptions = (selectedRows: LookupOption[]) => {
+        setLocalSelectedOptions((current) => {
+            const next = [...selectedRows, ...current];
+            return next.filter((option, index) =>
+                next.findIndex((item) => item.value === option.value) === index,
+            );
+        });
     };
 
     const handleUseSelected = (selectedRows: LookupOption[]) => (
@@ -165,6 +217,8 @@ export function LookupPicker<TLookupData = LookupOption>(
             type="button"
             size="sm"
             onClick={() => {
+                rememberSelectedOptions(selectedRows);
+
                 if (props.multiple) {
                     props.onChange(selectedRows.map((row) => row.value));
                 } else if (selectedRows[0]) {
@@ -182,8 +236,8 @@ export function LookupPicker<TLookupData = LookupOption>(
         columns,
         searchPlaceholder,
         emptyTitle: emptyMessage,
-        defaultPageSize: 5,
-        pageSizeOptions: [5, 10, 20],
+        defaultPageSize: 10,
+        pageSizeOptions: [10, 20, 50, 100],
         enableRowSelection: true,
         rowSelectionMode: props.multiple ? "multiple" as const : "single" as const,
         getRowId: (option: LookupOption) => option.value,

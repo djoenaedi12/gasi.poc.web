@@ -1,7 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { createDataUploadService } from "../lib/dataUploadService";
-import type { SearchRequest } from "../types/api.types";
+import { createDataUploadService } from "../services/dataUploadService";
+import { useMutation, useQuery, useQueryClient, type SearchRequest } from "@gasi/core-ui";
 import type { DataUploadParameters } from "../types/dataUpload.types";
 
 export const dataUploadQueryKeys = {
@@ -104,17 +103,19 @@ export function useCommitDataUpload(resource: string) {
     });
 }
 
-export function useDiscardDataUpload(resource: string) {
+export function useDeleteDataUpload(resource: string) {
     const service = useDataUploadService(resource);
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) => service.discard(id),
+        mutationFn: (id: string) => service.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: dataUploadQueryKeys.all(resource) });
         },
     });
 }
+
+export const useDiscardDataUpload = useDeleteDataUpload;
 
 export function useDownloadDataUploadTemplate(resource: string) {
     const service = useDataUploadService(resource);

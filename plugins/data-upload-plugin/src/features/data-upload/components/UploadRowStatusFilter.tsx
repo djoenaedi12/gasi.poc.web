@@ -1,12 +1,12 @@
-import type { UploadRowStatus } from "../../types/dataUpload.types";
-import { useI18n } from "../../lib/i18n";
+import type { UploadRowStatus } from "../types/dataUpload.types";
+import { useI18n } from "@gasi/core-ui";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "../ui/select";
+} from "@gasi/core-ui";
 
 type UploadRowStatusFilterProps = {
     value: UploadRowStatus | "ALL";

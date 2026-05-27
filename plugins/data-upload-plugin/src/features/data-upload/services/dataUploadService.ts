@@ -1,5 +1,5 @@
-import { api } from "./axios";
-import type { ApiResponse, PageResult, SearchRequest } from "../types/api.types";
+import { api } from "@gasi/core-ui";
+import type { ApiResponse, PageResult, SearchRequest } from "@gasi/core-ui";
 import type {
     DataUploadDetail,
     DataUploadParameters,
@@ -17,7 +17,7 @@ function appendParameters(formData: FormData, parameters?: DataUploadParameters)
 }
 
 export function createDataUploadService(resource: string) {
-    const basePath = `/api/v1/${resource}/upl`;
+    const basePath = `/api/v1/${resource}/upload`;
 
     return {
         upload: (file: File, parameters?: DataUploadParameters) => {
@@ -52,7 +52,7 @@ export function createDataUploadService(resource: string) {
                 .post<ApiResponse<void>>(`${basePath}/${id}/commit`, undefined, { params: parameters })
                 .then((r) => r.data.data),
 
-        discard: (id: string) =>
+        delete: (id: string) =>
             api
                 .delete<ApiResponse<void>>(`${basePath}/${id}`)
                 .then((r) => r.data.data),

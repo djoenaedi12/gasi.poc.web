@@ -9,22 +9,21 @@ import {
     Upload,
 } from "lucide-react";
 import { type ReactNode, useId, useRef, useState } from "react";
-import type { UseQueryResult } from "@tanstack/react-query";
 
-import { useI18n } from "../../lib/i18n";
-import { cn } from "../../lib/utils";
-import type { GenericFilter, PageResult, SearchRequest } from "../../types/api.types";
-import { Button } from "../ui/button";
-import { Checkbox } from "../ui/checkbox";
-import { FormFieldLabel } from "./FormFieldLabel";
-import { LookupPicker, type LookupOption } from "./LookupPicker";
+import { useI18n } from "@gasi/core-ui";
+import { cn } from "@gasi/core-ui";
+import type { GenericFilter, PageResult, SearchRequest, UseQueryResult } from "@gasi/core-ui";
+import { Button } from "@gasi/core-ui";
+import { Checkbox } from "@gasi/core-ui";
+import { FormFieldLabel } from "@gasi/core-ui";
+import { LookupPicker, type LookupOption } from "@gasi/core-ui";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "../ui/select";
+} from "@gasi/core-ui";
 
 export type DataUploadSource = "FILE" | "THIRD_PARTY_API";
 

@@ -16,7 +16,9 @@ import {
 import { FormFieldError } from "./FormFieldError";
 import {
     LookupPicker,
+    type LookupDisplayColumn,
     type LookupOption,
+    type LookupPreset,
 } from "./LookupPicker";
 import type { GenericFilter, PageResult, SearchRequest } from "../../types/api.types";
 
@@ -27,8 +29,10 @@ type FormLookupPickerBaseProps<
     form: UseFormReturn<TFieldValues>;
     name: FieldPath<TFieldValues>;
     label: string;
+    lookup?: LookupPreset<TLookupData>;
     options?: LookupOption[];
     selectedOptions?: LookupOption[];
+    displayColumns?: LookupDisplayColumn[];
     pageQuery?: (
         request: SearchRequest,
     ) => UseQueryResult<PageResult<TLookupData> | undefined, unknown>;
@@ -80,8 +84,10 @@ export function FormLookupPicker<
         form,
         name,
         label,
+        lookup,
         options,
         selectedOptions,
+        displayColumns,
         pageQuery,
         mapOption,
         serverSide,
@@ -119,8 +125,10 @@ export function FormLookupPicker<
                         <LookupPicker
                             multiple
                             title={label}
+                            lookup={lookup}
                             options={options}
                             selectedOptions={selectedOptions}
+                            displayColumns={displayColumns}
                             pageQuery={pageQuery}
                             mapOption={mapOption}
                             serverSide={serverSide}
@@ -139,8 +147,10 @@ export function FormLookupPicker<
                     ) : (
                         <LookupPicker
                             title={label}
+                            lookup={lookup}
                             options={options}
                             selectedOptions={selectedOptions}
+                            displayColumns={displayColumns}
                             pageQuery={pageQuery}
                             mapOption={mapOption}
                             serverSide={serverSide}

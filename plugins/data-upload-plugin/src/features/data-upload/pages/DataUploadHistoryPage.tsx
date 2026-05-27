@@ -2,26 +2,26 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Edit, Eye, FileClock, MoreHorizontal, SearchX, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
-import { formatDateTime } from "../../lib/date";
-import { useI18n } from "../../lib/i18n";
-import type { SearchRequest } from "../../types/api.types";
-import type { DataUploadSummary, UploadStatus } from "../../types/dataUpload.types";
-import { useDataUploadsPage, useDiscardDataUpload } from "../../hooks/useDataUpload";
-import { formatUploadStatus, uploadStatusVariant } from "../../lib/dataUploadUtils";
-import { appToast } from "../../lib/toast";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
+import { formatDateTime } from "@gasi/core-ui";
+import { useI18n } from "@gasi/core-ui";
+import type { SearchRequest } from "@gasi/core-ui";
+import type { DataUploadSummary, UploadStatus } from "../types/dataUpload.types";
+import { useDataUploadsPage, useDiscardDataUpload } from "../hooks/useDataUpload";
+import { formatUploadStatus, uploadStatusVariant } from "../lib/dataUploadUtils";
+import { appToast } from "@gasi/core-ui";
+import { Badge } from "@gasi/core-ui";
+import { Button } from "@gasi/core-ui";
+import { Card, CardContent } from "@gasi/core-ui";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { ServerDataTable } from "../datatable/DataTable";
-import { PageHeader } from "../molecules/PageHeader";
-import { ConfirmDialog } from "../molecules/ConfirmDialog";
+} from "@gasi/core-ui";
+import { ServerDataTable } from "@gasi/core-ui";
+import { PageHeader } from "@gasi/core-ui";
+import { ConfirmDialog } from "@gasi/core-ui";
 
 type DataUploadHistoryPageProps = {
     resource: string;

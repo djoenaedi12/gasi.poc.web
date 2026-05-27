@@ -14,7 +14,7 @@ import { Plus, Search, Trash2 } from "lucide-react";
 import type { GenericFilter, PageResult, SearchRequest } from "../../types/api.types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { LookupPicker, type LookupOption } from "./LookupPicker";
+import { LookupPicker, type LookupDisplayColumn, type LookupOption, type LookupPreset } from "./LookupPicker";
 import {
     Select,
     SelectContent,
@@ -30,6 +30,7 @@ import {
     TableHeader,
     TableRow,
 } from "../ui/table";
+import { Switch } from "../ui/switch";
 
 type FormArrayTableOption = {
     label: string;
@@ -39,9 +40,11 @@ type FormArrayTableOption = {
 type FormArrayTableColumn<TFieldValues extends FieldValues> = {
     name: string;
     header: ReactNode;
-    type?: "text" | "number" | "email" | "date" | "datetime-local" | "select" | "lookup";
+    type?: "text" | "number" | "email" | "date" | "datetime-local" | "switch" | "select" | "lookup";
     options?: FormArrayTableOption[];
+    lookup?: LookupPreset<any>;
     selectedOptions?: LookupOption[];
+    displayColumns?: LookupDisplayColumn[];
     pageQuery?: (
         request: SearchRequest,
     ) => UseQueryResult<PageResult<unknown> | undefined, unknown>;
@@ -247,8 +250,10 @@ function DefaultCellInput<TFieldValues extends FieldValues>({
                 render={({ field }) => (
                     <LookupPicker
                         title={String(column.header)}
+                        lookup={column.lookup}
                         options={column.options}
                         selectedOptions={column.selectedOptions}
+                        displayColumns={column.displayColumns}
                         pageQuery={column.pageQuery}
                         mapOption={column.mapOption}
                         serverSide={column.serverSide}
@@ -262,6 +267,26 @@ function DefaultCellInput<TFieldValues extends FieldValues>({
                         emptyMessage={column.emptyMessage}
                         disabled={disabled}
                         icon={<Search className="size-4 text-muted-foreground" />}
+                    />
+                )}
+            />
+        );
+    }
+
+    if (column.type === "switch") {
+        return (
+            <Controller
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                    <Switch
+                        size="sm"
+                        checked={Boolean(field.value)}
+                        onCheckedChange={(checked) =>
+                            field.onChange(Boolean(checked))
+                        }
+                        disabled={disabled}
+                        aria-label={String(column.header)}
                     />
                 )}
             />

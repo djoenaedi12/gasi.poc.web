@@ -91,24 +91,24 @@ export function DataTableRowActions<TData>({
                         </Button>
                     ) : null}
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon-sm"
-                                    aria-label="More actions"
-                                    title="More actions"
-                                />
-                            }
-                        >
-                            <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
+                    {showDelete ? (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon-sm"
+                                        aria-label="More actions"
+                                        title="More actions"
+                                    />
+                                }
+                            >
+                                <MoreHorizontal className="size-4" />
+                            </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align="end" sideOffset={6} className="w-40">
-                            <DropdownMenuGroup>
-                                {showDelete ? (
+                            <DropdownMenuContent align="end" sideOffset={6} className="w-40">
+                                <DropdownMenuGroup>
                                     <DropdownMenuItem
                                         variant="destructive"
                                         disabled={!onDelete}
@@ -117,10 +117,10 @@ export function DataTableRowActions<TData>({
                                         <Trash2 className="size-4" />
                                         {deleteLabel}
                                     </DropdownMenuItem>
-                                ) : null}
-                            </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : null}
                 </div>
                 {deleteDialog}
             </>

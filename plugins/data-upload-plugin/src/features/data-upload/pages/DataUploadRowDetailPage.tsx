@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { AlertTriangle, LayoutList } from "lucide-react";
 
-import { useDataUploadDetail, useDataUploadRowDetail } from "../../hooks/useDataUpload";
-import { formatUploadRowStatus, uploadRowStatusVariant } from "../../lib/dataUploadUtils";
-import { useI18n } from "../../lib/i18n";
-import { Badge } from "../ui/badge";
-import { Card } from "../ui/card";
-import { CardTabs, CardTabsContent, CardTabsList, CardTabsTrigger } from "../molecules/CardTabs";
-import { PageHeader } from "../molecules/PageHeader";
+import { useDataUploadDetail, useDataUploadRowDetail } from "../hooks/useDataUpload";
+import { formatUploadRowStatus, uploadRowStatusVariant } from "../lib/dataUploadUtils";
+import { useI18n } from "@gasi/core-ui";
+import { Badge } from "@gasi/core-ui";
+import { Card } from "@gasi/core-ui";
+import { CardTabs, CardTabsContent, CardTabsList, CardTabsTrigger } from "@gasi/core-ui";
+import { PageHeader } from "@gasi/core-ui";
 
 type DataUploadRowDetailPageProps = {
     resource: string;

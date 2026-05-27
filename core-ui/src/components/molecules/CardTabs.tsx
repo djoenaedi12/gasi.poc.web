@@ -7,7 +7,7 @@ function CardTabsList({ className, ...props }: ComponentProps<typeof TabsList>) 
         <TabsList
             variant="line"
             className={cn(
-                "h-auto w-fit justify-start overflow-x-auto border-b border-border bg-transparent p-0 text-muted-foreground",
+                "mb-1 inline-flex !h-auto w-fit max-w-full flex-wrap justify-start gap-1 overflow-visible !rounded-lg border bg-background p-1.5 text-muted-foreground shadow-sm",
                 className,
             )}
             {...props}
@@ -19,10 +19,10 @@ function CardTabsTrigger({ className, ...props }: ComponentProps<typeof TabsTrig
     return (
         <TabsTrigger
             className={cn(
-                "flex-none rounded-none border-0 px-0 py-2.5 text-sm font-medium",
-                "data-active:bg-transparent data-active:font-semibold data-active:text-primary data-active:shadow-none",
-                "after:bg-primary",
-                "[&_svg]:size-4",
+                "h-7 flex-none justify-center rounded-md border-0 px-2.5 py-1 text-center text-xs font-medium leading-tight whitespace-nowrap",
+                "after:hidden transition-all hover:bg-muted/60 hover:text-foreground",
+                "data-active:!bg-primary/10 data-active:!text-primary data-active:shadow-sm",
+                "[&_svg]:size-3.5 [&_svg]:text-current",
                 className,
             )}
             {...props}

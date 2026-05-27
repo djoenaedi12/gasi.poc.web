@@ -1,6 +1,5 @@
-import type { GenericFilter } from "../types/api.types";
+import { translate, type GenericFilter, type Translate } from "@gasi/core-ui";
 import type { DataUploadSummary, UploadRowStatus, UploadStatus } from "../types/dataUpload.types";
-import { translate, type Translate } from "./i18n";
 
 export function formatUploadRows(upload?: Pick<DataUploadSummary, "totalRows" | "validRows" | "invalidRows">, t: Translate = translate) {
     if (!upload) return "-";

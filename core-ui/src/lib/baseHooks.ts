@@ -4,6 +4,7 @@ import type { PageResult, SearchRequest } from "../types/api.types";
 type BaseService<TSummary, TDetail, TCreate, TUpdate> = {
     list: (request?: SearchRequest) => Promise<TSummary[]>;
     page: (request?: SearchRequest) => Promise<PageResult<TSummary> | undefined>;
+    lookupPage?: (request?: SearchRequest) => Promise<PageResult<TSummary> | undefined>;
     detail: (id: string) => Promise<TDetail | undefined>;
     create: (data: TCreate) => Promise<TDetail | undefined>;
     update: (id: string, data: TUpdate) => Promise<TDetail | undefined>;
@@ -18,6 +19,7 @@ export function createBaseHooks<TSummary, TDetail, TCreate, TUpdate>(
         all: [entityKey] as const,
         list: (request?: SearchRequest) => [entityKey, "list", request ?? {}] as const,
         page: (request?: SearchRequest) => [entityKey, "page", request ?? {}] as const,
+        lookupPage: (request?: SearchRequest) => [entityKey, "lookup", "page", request ?? {}] as const,
         detail: (id?: string) => [entityKey, "detail", id] as const,
     };
 
@@ -32,6 +34,13 @@ export function createBaseHooks<TSummary, TDetail, TCreate, TUpdate>(
         return useQuery({
             queryKey: queryKeys.page(request),
             queryFn: () => service.page(request),
+        });
+    }
+
+    function useLookupPage(request?: SearchRequest) {
+        return useQuery({
+            queryKey: queryKeys.lookupPage(request),
+            queryFn: () => (service.lookupPage ?? service.page)(request),
         });
     }
 
@@ -75,5 +84,5 @@ export function createBaseHooks<TSummary, TDetail, TCreate, TUpdate>(
         });
     }
 
-    return { queryKeys, useList, usePage, useDetail, useCreate, useUpdate, useDelete };
+    return { queryKeys, useList, usePage, useLookupPage, useDetail, useCreate, useUpdate, useDelete };
 }

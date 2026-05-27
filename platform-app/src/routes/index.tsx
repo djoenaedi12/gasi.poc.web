@@ -35,7 +35,9 @@ export function AppRoutes() {
   const Guard        = authGuard?.component ?? null;
 
   const blankRoutes = pluginRoutes.filter((r) => r.public || r.layout === 'blank');
-  const dashboardRoutes = pluginRoutes.filter((r) => !r.public && r.layout !== 'blank');
+  const dashboardRoutes = pluginRoutes
+    .filter((r) => !r.public && r.layout !== 'blank')
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   const renderProtectedRoute = (route: typeof pluginRoutes[0]) => {
     const Comp       = route.component;

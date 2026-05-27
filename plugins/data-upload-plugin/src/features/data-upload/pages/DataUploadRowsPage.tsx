@@ -2,20 +2,20 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Eye, FileText, SearchX } from "lucide-react";
 import { useCallback, useMemo } from "react";
 
-import { formatDateTime } from "../../lib/date";
-import { useI18n } from "../../lib/i18n";
-import type { SearchRequest } from "../../types/api.types";
-import type { DataUploadRowSummary } from "../../types/dataUpload.types";
+import { formatDateTime } from "@gasi/core-ui";
+import { useI18n } from "@gasi/core-ui";
+import type { SearchRequest } from "@gasi/core-ui";
+import type { DataUploadRowSummary } from "../types/dataUpload.types";
 import {
     useDataUploadDetail,
     useDataUploadRowsPage,
-} from "../../hooks/useDataUpload";
-import { formatUploadRowStatus, formatUploadStatus, uploadRowStatusVariant, uploadStatusVariant } from "../../lib/dataUploadUtils";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
-import { ServerDataTable } from "../datatable/DataTable";
-import { PageHeader } from "../molecules/PageHeader";
+} from "../hooks/useDataUpload";
+import { formatUploadRowStatus, formatUploadStatus, uploadRowStatusVariant, uploadStatusVariant } from "../lib/dataUploadUtils";
+import { Badge } from "@gasi/core-ui";
+import { Button } from "@gasi/core-ui";
+import { Card, CardContent } from "@gasi/core-ui";
+import { ServerDataTable } from "@gasi/core-ui";
+import { PageHeader } from "@gasi/core-ui";
 
 type DataUploadRowsPageProps = {
     resource: string;
