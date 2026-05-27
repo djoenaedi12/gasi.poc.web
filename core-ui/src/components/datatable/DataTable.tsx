@@ -23,6 +23,7 @@ import {
     ChevronRight,
     Columns3,
     Download,
+    Filter,
     Search,
     SearchX,
     X,
@@ -139,7 +140,7 @@ function formatFilterChipValue(filter: DataTableFilterField, value: string) {
     return value;
 }
 
-function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "toolbar" = "toolbar") {
+function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "toolbar" | "panel" = "toolbar") {
     if (filter.renderControl) {
         return filter.renderControl(filter);
     }
@@ -150,14 +151,23 @@ function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "t
         .filter(Boolean);
     const selectedLabels = selectedValues
         .map((value) => filter.options?.find((option) => option.value === value)?.label ?? value);
-    const className = mode === "inline" ? "h-10 w-full sm:w-44" : "h-10 w-full sm:w-48";
+    const className =
+        mode === "panel"
+            ? "h-[var(--control-height)] w-full min-w-0"
+            : mode === "inline"
+                ? "h-[var(--control-height)] w-full sm:w-44"
+                : "h-[var(--control-height)] w-full sm:w-48";
 
     if (filter.type === "select" || filter.type === "boolean") {
         return (
             <select
                 value={filter.value}
                 onChange={(event) => filter.onChange(event.target.value)}
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className={[
+                    "h-[var(--control-height)]",
+                    "rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                    mode === "panel" ? "w-full" : "",
+                ].join(" ")}
             >
                 {(filter.options ?? []).map((option) => (
                     <option key={option.value} value={option.value}>
@@ -170,7 +180,7 @@ function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "t
 
     if (filter.type === "toggle") {
         return (
-            <label className="flex h-10 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs">
+            <label className="flex h-[var(--control-height)] items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs">
                 <Switch
                     checked={filter.value === "true"}
                     onCheckedChange={(checked) => filter.onChange(checked ? "true" : "")}
@@ -191,7 +201,7 @@ function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "t
                             variant="outline"
                             className={[
                                 "justify-between truncate",
-                                mode === "inline" ? "w-full sm:w-48" : "w-full sm:w-52",
+                                mode === "panel" ? "w-full" : mode === "inline" ? "w-full sm:w-48" : "w-full sm:w-52",
                             ].join(" ")}
                         />
                     }
@@ -370,6 +380,7 @@ export function ServerDataTable<TData, TValue>({
     const [appliedFilterValues, setAppliedFilterValues] = useState<Record<string, string>>(
         () => Object.fromEntries(filters.map((filter) => [filter.id, filter.value ?? ""])),
     );
+    const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
     const [columnVisibility, setColumnVisibility] =
         useState<ColumnVisibilityState>(() =>
             getInitialColumnVisibility(columns, defaultVisibleColumns, columnPreferenceKey),
@@ -420,14 +431,25 @@ export function ServerDataTable<TData, TValue>({
             .filter((filter) => filter.placement !== "inline")
             .map((filter) => ({
                 ...filter,
-                value: appliedFilterValues[filter.id] ?? "",
+                value: draftFilterValues[filter.id] ?? "",
                 onChange: (value) => {
                     setDraftFilterValues((current) => ({ ...current, [filter.id]: value }));
-                    setAppliedFilterValues((current) => ({ ...current, [filter.id]: value }));
-                    setPage(0);
                 },
             }))
-    ), [appliedFilterValues, filters]);
+    ), [draftFilterValues, filters]);
+
+    const handleApplyFilters = () => {
+        setAppliedFilterValues(draftFilterValues);
+        setPage(0);
+        setFilterPopoverOpen(false);
+    };
+
+    const handleClearDraftFilters = () => {
+        setDraftFilterValues((current) => ({
+            ...current,
+            ...Object.fromEntries(toolbarFilterControls.map((filter) => [filter.id, ""])),
+        }));
+    };
 
     const handleResetFilters = () => {
         const emptyValues = Object.fromEntries(filters.map((filter) => [filter.id, ""]));
@@ -478,14 +500,53 @@ export function ServerDataTable<TData, TValue>({
             ))}
         </div>
     ) : null;
+    const activeToolbarFilterCount = toolbarFilterControls.filter((filter) => (
+        appliedFilterValues[filter.id]?.trim()
+    )).length;
     const toolbarFilters = toolbarFilterControls.length ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            {toolbarFilterControls.map((filter) => (
-                <div key={filter.id} className="flex min-w-0 items-center">
-                    {renderFilterControl(filter, "toolbar")}
+        <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+            <PopoverTrigger
+                render={
+                    <Button type="button" variant="outline" />
+                }
+            >
+                <Filter className="size-4" />
+                Filter
+                {activeToolbarFilterCount ? (
+                    <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-xs leading-none text-primary-foreground">
+                        {activeToolbarFilterCount}
+                    </span>
+                ) : null}
+            </PopoverTrigger>
+
+            <PopoverContent align="end" sideOffset={6} className="max-h-[min(32rem,calc(100vh-8rem))] w-80 gap-0 p-0">
+                <PopoverHeader className="shrink-0 border-b p-4">
+                    <PopoverTitle>Filters</PopoverTitle>
+                </PopoverHeader>
+
+                <div className="grid gap-3 overflow-y-auto p-4">
+                    {toolbarFilterControls.map((filter) => (
+                        <div key={filter.id} className="grid gap-1.5">
+                            <span className="text-sm font-medium text-foreground">{filter.label}</span>
+                            {renderFilterControl(filter, "panel")}
+                        </div>
+                    ))}
                 </div>
-            ))}
-        </div>
+
+                <div className="flex shrink-0 items-center justify-end gap-2 border-t p-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleClearDraftFilters}
+                    >
+                        Clear
+                    </Button>
+                    <Button type="button" onClick={handleApplyFilters}>
+                        Apply
+                    </Button>
+                </div>
+            </PopoverContent>
+        </Popover>
     ) : null;
     const resolvedToolbar = inlineFilters || providedToolbar ? (
         <>
@@ -968,7 +1029,12 @@ export function DataTable<TData, TValue>({
             </>
         ) : null;
 
-    const resolvedToolbarEnd = toolbarEnd ?? generatedToolbarEnd;
+    const resolvedToolbarEnd = toolbarEnd || generatedToolbarEnd ? (
+        <>
+            {toolbarEnd}
+            {generatedToolbarEnd}
+        </>
+    ) : null;
 
     const currentPageIndex = table.getState().pagination.pageIndex;
 

@@ -84,7 +84,7 @@ export function DateRangePicker({
                         <Button
                             type="button"
                             variant="outline"
-                            className="w-full justify-start truncate font-normal sm:w-64"
+                            className="h-[var(--control-height)] w-full min-w-0 justify-start truncate font-normal"
                         />
                     }
                 >

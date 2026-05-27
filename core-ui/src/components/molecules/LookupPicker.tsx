@@ -276,7 +276,7 @@ export function LookupPicker<TLookupData = LookupOption>(
                     variant="outline"
                     disabled={disabled}
                     aria-invalid={props["aria-invalid"]}
-                    className="h-10 w-full justify-start bg-background shadow-xs"
+                    className="h-[var(--control-height)] w-full min-w-0 justify-start bg-background shadow-xs"
                     onClick={() => handleOpenChange(true)}
                 >
                     {icon}

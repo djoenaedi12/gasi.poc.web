@@ -174,7 +174,7 @@ export function FormDateTimePicker<TFieldValues extends FieldValues>({
                                         disabled={disabled}
                                         data-empty={!dateValue}
                                         aria-invalid={Boolean(error)}
-                                        className="w-full justify-start text-left font-normal data-[empty=true]:text-muted-foreground"
+                                        className="h-[var(--control-height)] w-full min-w-0 justify-start text-left font-normal data-[empty=true]:text-muted-foreground"
                                     />
                                 }
                             >

@@ -106,7 +106,7 @@ export function FormMultiSelect<TFieldValues extends FieldValues>({
                                         disabled={disabled}
                                         data-empty={selectedValues.length === 0}
                                         aria-invalid={Boolean(error)}
-                                        className="h-auto min-h-9 w-full justify-between font-normal data-[empty=true]:text-muted-foreground"
+                                        className="h-auto min-h-[var(--control-height)] w-full justify-between font-normal data-[empty=true]:text-muted-foreground"
                                     />
                                 }
                             >
