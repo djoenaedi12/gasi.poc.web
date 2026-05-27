@@ -31,6 +31,7 @@ import {
     TableRow,
 } from "../ui/table";
 import { Switch } from "../ui/switch";
+import { FormFieldError } from "./FormFieldError";
 
 type FormArrayTableOption = {
     label: string;
@@ -212,64 +213,73 @@ function DefaultCellInput<TFieldValues extends FieldValues>({
     column: FormArrayTableColumn<TFieldValues>;
     disabled?: boolean;
 }) {
+    const error = getFieldError(form.formState.errors, name);
+
     if (column.type === "select") {
         return (
-            <Controller
-                control={form.control}
-                name={name}
-                render={({ field }) => (
-                    <Select
-                        value={(field.value as string) ?? ""}
-                        onValueChange={field.onChange}
-                        disabled={disabled}
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder={column.placeholder} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {(column.options ?? []).map((option) => (
-                                <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                >
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
-            />
+            <div className="grid gap-1.5">
+                <Controller
+                    control={form.control}
+                    name={name}
+                    render={({ field }) => (
+                        <Select
+                            value={(field.value as string) ?? ""}
+                            onValueChange={field.onChange}
+                            disabled={disabled}
+                        >
+                            <SelectTrigger className="w-full" aria-invalid={Boolean(error)}>
+                                <SelectValue placeholder={column.placeholder} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {(column.options ?? []).map((option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
+                <FormFieldError error={error} />
+            </div>
         );
     }
 
     if (column.type === "lookup") {
         return (
-            <Controller
-                control={form.control}
-                name={name}
-                render={({ field }) => (
-                    <LookupPicker
-                        title={String(column.header)}
-                        lookup={column.lookup}
-                        options={column.options}
-                        selectedOptions={column.selectedOptions}
-                        displayColumns={column.displayColumns}
-                        pageQuery={column.pageQuery}
-                        mapOption={column.mapOption}
-                        serverSide={column.serverSide}
-                        searchFields={column.searchFields}
-                        buildFilter={column.buildFilter}
-                        value={(field.value as string) ?? undefined}
-                        onChange={(value) => field.onChange(value)}
-                        onClear={() => field.onChange(undefined)}
-                        placeholder={column.placeholder}
-                        searchPlaceholder={column.searchPlaceholder}
-                        emptyMessage={column.emptyMessage}
-                        disabled={disabled}
-                        icon={<Search className="size-4 text-muted-foreground" />}
-                    />
-                )}
-            />
+            <div className="grid gap-1.5">
+                <Controller
+                    control={form.control}
+                    name={name}
+                    render={({ field }) => (
+                        <LookupPicker
+                            title={String(column.header)}
+                            lookup={column.lookup}
+                            options={column.options}
+                            selectedOptions={column.selectedOptions}
+                            displayColumns={column.displayColumns}
+                            pageQuery={column.pageQuery}
+                            mapOption={column.mapOption}
+                            serverSide={column.serverSide}
+                            searchFields={column.searchFields}
+                            buildFilter={column.buildFilter}
+                            value={(field.value as string) ?? undefined}
+                            onChange={(value) => field.onChange(value)}
+                            onClear={() => field.onChange(undefined)}
+                            placeholder={column.placeholder}
+                            searchPlaceholder={column.searchPlaceholder}
+                            emptyMessage={column.emptyMessage}
+                            disabled={disabled}
+                            aria-invalid={Boolean(error)}
+                            icon={<Search className="size-4 text-muted-foreground" />}
+                        />
+                    )}
+                />
+                <FormFieldError error={error} />
+            </div>
         );
     }
 
@@ -294,12 +304,26 @@ function DefaultCellInput<TFieldValues extends FieldValues>({
     }
 
     return (
-        <Input
-            type={column.type ?? "text"}
-            placeholder={column.placeholder}
-            className={column.inputClassName}
-            disabled={disabled}
-            {...form.register(name)}
-        />
+        <div className="grid gap-1.5">
+            <Input
+                type={column.type ?? "text"}
+                placeholder={column.placeholder}
+                className={column.inputClassName}
+                disabled={disabled}
+                aria-invalid={Boolean(error)}
+                {...form.register(name)}
+            />
+            <FormFieldError error={error} />
+        </div>
     );
+}
+
+function getFieldError(errors: unknown, path: string) {
+    return path.split(".").reduce<unknown>((current, segment) => {
+        if (!current || typeof current !== "object") {
+            return undefined;
+        }
+
+        return (current as Record<string, unknown>)[segment];
+    }, errors) as Parameters<typeof FormFieldError>[0]["error"] | undefined;
 }

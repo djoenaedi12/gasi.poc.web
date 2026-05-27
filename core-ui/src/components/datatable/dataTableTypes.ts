@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
+import type { UseQueryResult } from "@tanstack/react-query";
 import type { FilterOperator } from "../../types/api.types";
+import type { GenericFilter, PageResult, SearchRequest } from "../../types/api.types";
+import type { LookupDisplayColumn, LookupOption, LookupPreset } from "../molecules/LookupPicker";
 
 export type DataTableAction = {
     label: string;
@@ -20,6 +23,19 @@ export type DataTableFilterField = {
     placeholder?: string;
     type?: "text" | "select" | "multi-select" | "date" | "date-range" | "lookup" | "boolean" | "toggle";
     options?: { label: string; value: string }[];
+    lookup?: LookupPreset<any>;
+    lookupTitle?: string;
+    selectedOptions?: LookupOption[];
+    displayColumns?: LookupDisplayColumn[];
+    pageQuery?: (
+        request: SearchRequest,
+    ) => UseQueryResult<PageResult<unknown> | undefined, unknown>;
+    mapOption?: (item: unknown) => LookupOption;
+    serverSide?: boolean;
+    searchFields?: string[];
+    buildFilter?: (search: string) => GenericFilter | undefined;
+    searchPlaceholder?: string;
+    emptyMessage?: string;
     chipLabel?: string;
     placement?: "inline" | "toolbar";
     range?: {

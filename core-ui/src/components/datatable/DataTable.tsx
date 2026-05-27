@@ -38,6 +38,7 @@ import {
 } from "../ui/empty";
 import { type MouseEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import type {
+    FilterOperator,
     GenericFilter,
     PageResult,
     SearchRequest,
@@ -46,6 +47,7 @@ import type {
 
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
+import { LookupPicker } from "../molecules/LookupPicker";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -138,6 +140,20 @@ function formatFilterChipValue(filter: DataTableFilterField, value: string) {
     }
 
     return value;
+}
+
+function formatFilterOperator(operator?: FilterOperator) {
+    const labels: Partial<Record<FilterOperator, string>> = {
+        LIKE: "contains",
+        EQUALS: "equals",
+        IN: "in",
+        GREATER_THAN: ">",
+        GREATER_THAN_OR_EQUALS: ">=",
+        LESS_THAN: "<",
+        LESS_THAN_OR_EQUALS: "<=",
+    };
+
+    return operator ? labels[operator] ?? operator.toLowerCase().replace(/_/g, " ") : "contains";
 }
 
 function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "toolbar" | "panel" = "toolbar") {
@@ -243,6 +259,29 @@ function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "t
                 onChange={filter.onChange}
                 placeholder={filter.placeholder ?? filter.label}
                 className={mode === "toolbar" ? "w-full sm:w-auto" : "w-full"}
+            />
+        );
+    }
+
+    if (filter.type === "lookup") {
+        return (
+            <LookupPicker
+                title={filter.lookupTitle ?? filter.label}
+                lookup={filter.lookup}
+                options={filter.options}
+                selectedOptions={filter.selectedOptions}
+                displayColumns={filter.displayColumns}
+                pageQuery={filter.pageQuery}
+                mapOption={filter.mapOption}
+                serverSide={filter.serverSide}
+                searchFields={filter.searchFields}
+                buildFilter={filter.buildFilter}
+                value={filter.value || undefined}
+                onChange={filter.onChange}
+                onClear={() => filter.onChange("")}
+                placeholder={filter.placeholder ?? filter.label}
+                searchPlaceholder={filter.searchPlaceholder}
+                emptyMessage={filter.emptyMessage}
             />
         );
     }
@@ -400,9 +439,14 @@ export function ServerDataTable<TData, TValue>({
                     return result;
                 }
 
+                const chipValue = formatFilterChipValue(filter, value);
+                const chipLabel = filter.type === "date-range"
+                    ? `${filter.chipLabel ?? filter.label}: ${chipValue}`
+                    : `${filter.chipLabel ?? filter.label} ${formatFilterOperator(filter.operator)} ${chipValue}`;
+
                 result.push({
                     id: filter.id,
-                    label: `${filter.chipLabel ?? filter.label}: ${formatFilterChipValue(filter, value)}`,
+                    label: chipLabel,
                     onRemove: () => {
                         setDraftFilterValues((current) => ({ ...current, [filter.id]: "" }));
                         setAppliedFilterValues((current) => ({ ...current, [filter.id]: "" }));
