@@ -212,21 +212,23 @@ export function LookupPicker<TLookupData = LookupOption>(
         });
     };
 
+    const commitSelectedRows = (selectedRows: LookupOption[]) => {
+        rememberSelectedOptions(selectedRows);
+
+        if (props.multiple) {
+            props.onChange(selectedRows.map((row) => row.value));
+        } else if (selectedRows[0]) {
+            props.onChange(selectedRows[0].value);
+        }
+
+        setOpen(false);
+    };
+
     const handleUseSelected = (selectedRows: LookupOption[]) => (
         <Button
             type="button"
             size="sm"
-            onClick={() => {
-                rememberSelectedOptions(selectedRows);
-
-                if (props.multiple) {
-                    props.onChange(selectedRows.map((row) => row.value));
-                } else if (selectedRows[0]) {
-                    props.onChange(selectedRows[0].value);
-                }
-
-                setOpen(false);
-            }}
+            onClick={() => commitSelectedRows(selectedRows)}
         >
             Use selected
         </Button>
@@ -244,6 +246,7 @@ export function LookupPicker<TLookupData = LookupOption>(
         rowSelection,
         onRowSelectionChange: handleRowSelectionChange,
         renderSelectedActions: handleUseSelected,
+        onRowDoubleClick: props.multiple ? undefined : (row: LookupOption) => commitSelectedRows([row]),
     };
 
     const lookupPageQuery = pageQuery

@@ -18,6 +18,7 @@ type DataTableRowActionsOptions<TData> = {
     entityName: string;
     getRowId: (row: TData) => string;
     onDelete?: (id: string, row: TData) => void | Promise<void>;
+    backTo?: string;
     showView?: boolean;
     showEdit?: boolean;
     showDelete?: boolean;
@@ -35,6 +36,7 @@ export function DataTableRowActions<TData>({
     entityName,
     getRowId,
     onDelete,
+    backTo,
     showView = true,
     showEdit = true,
     showDelete = true,
@@ -49,6 +51,9 @@ export function DataTableRowActions<TData>({
 }) {
     const id = getRowId(row);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const backToQuery = optionsBackTo(backTo);
+    const viewPath = `${basePath}/${id}${backToQuery}`;
+    const editPath = `${basePath}/${id}/edit${backToQuery}`;
     const deleteDialog = showDelete ? (
         <ConfirmDialog
             destructive
@@ -70,7 +75,7 @@ export function DataTableRowActions<TData>({
                             type="button"
                             variant="outline"
                             size="icon-sm"
-                            render={<Link to={`${basePath}/${id}`} />}
+                            render={<Link to={viewPath} />}
                             aria-label={viewLabel}
                             title={viewLabel}
                         >
@@ -83,7 +88,7 @@ export function DataTableRowActions<TData>({
                             type="button"
                             variant="outline"
                             size="icon-sm"
-                            render={<Link to={`${basePath}/${id}/edit`} />}
+                            render={<Link to={editPath} />}
                             aria-label={editLabel}
                             title={editLabel}
                         >
@@ -139,14 +144,14 @@ export function DataTableRowActions<TData>({
                     <DropdownMenuContent align="end" sideOffset={6} className="w-40">
                         <DropdownMenuGroup>
                             {showView ? (
-                                <DropdownMenuItem render={<Link to={`${basePath}/${id}`} />}>
+                                <DropdownMenuItem render={<Link to={viewPath} />}>
                                     <Eye className="size-4" />
                                     {viewLabel}
                                 </DropdownMenuItem>
                             ) : null}
 
                             {showEdit ? (
-                                <DropdownMenuItem render={<Link to={`${basePath}/${id}/edit`} />}>
+                                <DropdownMenuItem render={<Link to={editPath} />}>
                                     <Edit className="size-4" />
                                     {editLabel}
                                 </DropdownMenuItem>
@@ -169,6 +174,10 @@ export function DataTableRowActions<TData>({
             {deleteDialog}
         </>
     );
+}
+
+function optionsBackTo(backTo?: string) {
+    return backTo ? `?backTo=${encodeURIComponent(backTo)}` : "";
 }
 
 export function getDataTableRowActionsColumn<TData>(

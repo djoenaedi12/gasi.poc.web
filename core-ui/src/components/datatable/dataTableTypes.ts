@@ -18,10 +18,10 @@ export type DataTableFilterField = {
     operator?: FilterOperator;
     value?: string;
     placeholder?: string;
-    type?: "text" | "select" | "multi-select" | "date" | "date-range";
+    type?: "text" | "select" | "multi-select" | "date" | "date-range" | "lookup" | "boolean" | "toggle";
     options?: { label: string; value: string }[];
     chipLabel?: string;
-    placement?: "popover" | "toolbar";
+    placement?: "inline" | "toolbar";
     range?: {
         from: {
             field: string;
@@ -36,6 +36,7 @@ export type DataTableFilterField = {
     };
     requestFilter?: boolean;
     transformValue?: (value: string) => unknown;
+    renderControl?: (filter: DataTableFilterControl) => ReactNode;
 };
 
 export type DataTableFilterChip = {

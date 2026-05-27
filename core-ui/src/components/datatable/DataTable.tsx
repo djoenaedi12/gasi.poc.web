@@ -7,6 +7,7 @@ import {
     type ColumnDef,
     type Header,
     type PaginationState,
+    type Row,
     type RowSelectionState,
     type SortingState,
     type TableOptions,
@@ -22,7 +23,6 @@ import {
     ChevronRight,
     Columns3,
     Download,
-    Filter,
     Search,
     SearchX,
     X,
@@ -35,7 +35,7 @@ import {
     EmptyTitle,
     EmptyContent,
 } from "../ui/empty";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type MouseEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import type {
     GenericFilter,
     PageResult,
@@ -54,6 +54,7 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
+import { Switch } from "../ui/switch";
 import { DateRangePicker } from "../molecules/DateRangePicker";
 import {
     Popover,
@@ -127,23 +128,31 @@ function formatFilterChipValue(filter: DataTableFilterField, value: string) {
             .join(", ");
     }
 
-    if (filter.type === "select") {
+    if (filter.type === "select" || filter.type === "boolean") {
         return filter.options?.find((option) => option.value === value)?.label ?? value;
+    }
+
+    if (filter.type === "toggle") {
+        return filter.options?.find((option) => option.value === value)?.label ?? filter.label;
     }
 
     return value;
 }
 
-function renderFilterControl(filter: DataTableFilterControl, mode: "toolbar" | "popover" = "popover") {
+function renderFilterControl(filter: DataTableFilterControl, mode: "inline" | "toolbar" = "toolbar") {
+    if (filter.renderControl) {
+        return filter.renderControl(filter);
+    }
+
     const selectedValues = filter.value
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean);
     const selectedLabels = selectedValues
         .map((value) => filter.options?.find((option) => option.value === value)?.label ?? value);
-    const className = mode === "toolbar" ? "h-10 w-full sm:w-44" : "h-10";
+    const className = mode === "inline" ? "h-10 w-full sm:w-44" : "h-10 w-full sm:w-48";
 
-    if (filter.type === "select") {
+    if (filter.type === "select" || filter.type === "boolean") {
         return (
             <select
                 value={filter.value}
@@ -159,6 +168,19 @@ function renderFilterControl(filter: DataTableFilterControl, mode: "toolbar" | "
         );
     }
 
+    if (filter.type === "toggle") {
+        return (
+            <label className="flex h-10 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs">
+                <Switch
+                    checked={filter.value === "true"}
+                    onCheckedChange={(checked) => filter.onChange(checked ? "true" : "")}
+                    size="sm"
+                />
+                <span className="truncate">{filter.label}</span>
+            </label>
+        );
+    }
+
     if (filter.type === "multi-select") {
         return (
             <DropdownMenu>
@@ -169,7 +191,7 @@ function renderFilterControl(filter: DataTableFilterControl, mode: "toolbar" | "
                             variant="outline"
                             className={[
                                 "justify-between truncate",
-                                mode === "toolbar" ? "w-full sm:w-48" : "w-full",
+                                mode === "inline" ? "w-full sm:w-48" : "w-full sm:w-52",
                             ].join(" ")}
                         />
                     }
@@ -262,18 +284,12 @@ export type DataTableProps<TData, TValue> = {
     renderSelectedActions?: (selectedRows: TData[]) => ReactNode;
     rowSelection?: RowSelectionState;
     onRowSelectionChange?: (selection: RowSelectionState) => void;
+    onRowDoubleClick?: (row: TData) => void;
     searchValue?: string;
     onSearchChange?: (value: string) => void;
     toolbar?: ReactNode;
-    moreFilter?: ReactNode;
     toolbarEnd?: ReactNode;
-    filterAction?: ReactNode;
-    filterTitle?: string;
-    filterControls?: DataTableFilterControl[];
-    filterActiveCount?: number;
     activeFilterChips?: DataTableFilterChip[];
-    onApplyFilters?: () => void;
-    onResetFilters?: () => void;
     onClearFilters?: () => void;
     activeFilters?: ReactNode;
     entityLabel?: string;
@@ -320,7 +336,6 @@ export type ServerDataTableProps<TData, TValue> = Omit<
     searchFields?: string[];
     buildFilter?: (search: string) => GenericFilter | undefined;
     filters?: DataTableFilterField[];
-    moreFilter?: ReactNode;
     advancedFilter?: GenericFilter;
     defaultSearchValue?: string;
     defaultVisibleColumns?: string[];
@@ -334,7 +349,6 @@ export function ServerDataTable<TData, TValue>({
     searchFields,
     buildFilter,
     filters = [],
-    moreFilter,
     advancedFilter,
     columnPreferenceKey,
     defaultSearchValue = "",
@@ -388,18 +402,9 @@ export function ServerDataTable<TData, TValue>({
             }, [])
     ), [appliedFilterValues, filters]);
 
-    const filterControls = useMemo<DataTableFilterControl[]>(() => (
-        filters.map((filter) => ({
-            ...filter,
-            value: draftFilterValues[filter.id] ?? "",
-            onChange: (value) =>
-                setDraftFilterValues((current) => ({ ...current, [filter.id]: value })),
-        }))
-    ), [draftFilterValues, filters]);
-    const popoverFilterControls = filterControls.filter((filter) => filter.placement !== "toolbar");
-    const toolbarFilterControls = useMemo<DataTableFilterControl[]>(() => (
+    const inlineFilterControls = useMemo<DataTableFilterControl[]>(() => (
         filters
-            .filter((filter) => filter.placement === "toolbar")
+            .filter((filter) => filter.placement === "inline")
             .map((filter) => ({
                 ...filter,
                 value: appliedFilterValues[filter.id] ?? "",
@@ -410,11 +415,19 @@ export function ServerDataTable<TData, TValue>({
                 },
             }))
     ), [appliedFilterValues, filters]);
-
-    const handleApplyFilters = () => {
-        setAppliedFilterValues(draftFilterValues);
-        setPage(0);
-    };
+    const toolbarFilterControls = useMemo<DataTableFilterControl[]>(() => (
+        filters
+            .filter((filter) => filter.placement !== "inline")
+            .map((filter) => ({
+                ...filter,
+                value: appliedFilterValues[filter.id] ?? "",
+                onChange: (value) => {
+                    setDraftFilterValues((current) => ({ ...current, [filter.id]: value }));
+                    setAppliedFilterValues((current) => ({ ...current, [filter.id]: value }));
+                    setPage(0);
+                },
+            }))
+    ), [appliedFilterValues, filters]);
 
     const handleResetFilters = () => {
         const emptyValues = Object.fromEntries(filters.map((filter) => [filter.id, ""]));
@@ -455,7 +468,16 @@ export function ServerDataTable<TData, TValue>({
         setSorts(nextSorts);
         setPage(0);
     };
-    const { toolbar: providedToolbar, ...dataTableProps } = props;
+    const { toolbar: providedToolbar, toolbarEnd: providedToolbarEnd, ...dataTableProps } = props;
+    const inlineFilters = inlineFilterControls.length ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {inlineFilterControls.map((filter) => (
+                <div key={filter.id} className="flex min-w-0 items-center">
+                    {renderFilterControl(filter, "inline")}
+                </div>
+            ))}
+        </div>
+    ) : null;
     const toolbarFilters = toolbarFilterControls.length ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {toolbarFilterControls.map((filter) => (
@@ -465,10 +487,16 @@ export function ServerDataTable<TData, TValue>({
             ))}
         </div>
     ) : null;
-    const resolvedToolbar = toolbarFilters || providedToolbar ? (
+    const resolvedToolbar = inlineFilters || providedToolbar ? (
+        <>
+            {inlineFilters}
+            {providedToolbar}
+        </>
+    ) : undefined;
+    const resolvedToolbarEnd = toolbarFilters || providedToolbarEnd ? (
         <>
             {toolbarFilters}
-            {providedToolbar}
+            {providedToolbarEnd}
         </>
     ) : undefined;
 
@@ -487,13 +515,8 @@ export function ServerDataTable<TData, TValue>({
             searchValue={search}
             onSearchChange={handleSearchChange}
             toolbar={resolvedToolbar}
-            moreFilter={moreFilter}
-            filterTitle={props.filterTitle ?? (filters.length ? "Filter" : undefined)}
-            filterControls={popoverFilterControls}
-            filterActiveCount={activeFilterChips.length}
+            toolbarEnd={resolvedToolbarEnd}
             activeFilterChips={activeFilterChips}
-            onApplyFilters={handleApplyFilters}
-            onResetFilters={handleResetFilters}
             onClearFilters={handleResetFilters}
             defaultPageSize={defaultPageSize}
             emptyTitle={query.isLoading ? loadingTitle : emptyTitle}
@@ -522,18 +545,12 @@ export function DataTable<TData, TValue>({
     renderSelectedActions,
     rowSelection: controlledRowSelection,
     onRowSelectionChange,
+    onRowDoubleClick,
     searchValue,
     onSearchChange,
     toolbar,
-    moreFilter,
     toolbarEnd,
-    filterAction,
-    filterTitle = "Filters",
-    filterControls = [],
-    filterActiveCount,
     activeFilterChips = [],
-    onApplyFilters,
-    onResetFilters,
     onClearFilters,
     activeFilters,
     entityLabel = "row(s)",
@@ -589,6 +606,34 @@ export function DataTable<TData, TValue>({
         }
 
         setInternalGlobalFilter(value);
+    };
+
+    const isInteractiveTarget = (target: EventTarget | null) =>
+        target instanceof HTMLElement &&
+        Boolean(target.closest(
+            'a, button, input, select, textarea, [role="button"], [role="checkbox"], [role="menuitem"], [data-slot="checkbox"]',
+        ));
+
+    const handleTableRowClick = (
+        event: MouseEvent<HTMLTableRowElement>,
+        row: Row<TData>,
+    ) => {
+        if (!enableRowSelection || event.detail > 1 || isInteractiveTarget(event.target)) {
+            return;
+        }
+
+        row.toggleSelected(!row.getIsSelected());
+    };
+
+    const handleTableRowDoubleClick = (
+        event: MouseEvent<HTMLTableRowElement>,
+        row: Row<TData>,
+    ) => {
+        if (!onRowDoubleClick || isInteractiveTarget(event.target)) {
+            return;
+        }
+
+        onRowDoubleClick(row.original);
     };
 
     const handleRowSelectionChange = (updater: Updater<RowSelectionState>) => {
@@ -856,61 +901,8 @@ export function DataTable<TData, TValue>({
         </Button>
     ) : null;
 
-    const resolvedFilterActiveCount =
-        filterActiveCount ?? activeFilterChips.length + (globalFilter.trim() ? 1 : 0);
-    const generatedFilterAction = filterControls.length ? (
-        <Popover>
-            <PopoverTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="relative"
-                        aria-label={filterTitle}
-                    />
-                }
-            >
-                <Filter className="size-4" />
-                Filter
-                {resolvedFilterActiveCount > 0 ? (
-                    <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground shadow-sm">
-                        {resolvedFilterActiveCount}
-                    </span>
-                ) : null}
-            </PopoverTrigger>
-
-            <PopoverContent align="end" sideOffset={8} className="w-80 gap-5 p-5">
-                <PopoverHeader>
-                    <PopoverTitle className="text-base">{filterTitle}</PopoverTitle>
-                </PopoverHeader>
-
-                <div className="flex flex-col gap-4">
-                    {filterControls.map((filter) => (
-                        <label key={filter.id} className="flex flex-col gap-2 text-sm">
-                            <span className="font-medium text-muted-foreground">
-                                {filter.label}
-                            </span>
-                            {renderFilterControl(filter)}
-                        </label>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" variant="outline" onClick={onResetFilters}>
-                        Reset
-                    </Button>
-                    <Button type="button" onClick={onApplyFilters}>
-                        Apply Filter
-                    </Button>
-                </div>
-            </PopoverContent>
-        </Popover>
-    ) : null;
-
-    const resolvedFilterAction = filterAction ?? generatedFilterAction;
-
     const generatedToolbarEnd =
-        csvExportAction || visibleActions.length || columnSettingsAction || resolvedFilterAction || resolvedPrimaryAction ? (
+        csvExportAction || visibleActions.length || columnSettingsAction || resolvedPrimaryAction ? (
             <>
                 {csvExportAction}
 
@@ -928,8 +920,6 @@ export function DataTable<TData, TValue>({
                 ))}
 
                 {columnSettingsAction}
-
-                {resolvedFilterAction}
 
                 {resolvedPrimaryAction ? (
                     resolvedPrimaryAction.items?.length ? (
@@ -1074,9 +1064,6 @@ export function DataTable<TData, TValue>({
                             className="pl-9"
                         />
                     </div>
-
-                    {moreFilter}
-
                     {toolbar}
                 </div>
 
@@ -1121,7 +1108,15 @@ export function DataTable<TData, TValue>({
                     <TableBody>
                         {table.getRowModel().rows.length ? (
                             table.getRowModel().rows.map((row, index) => (
-                                <TableRow key={row.id} className={highlightFirstRow && index === 0 ? "bg-primary/5 hover:bg-primary/10" : undefined}>
+                                <TableRow
+                                    key={row.id}
+                                    className={[
+                                        enableRowSelection || onRowDoubleClick ? "cursor-pointer" : "",
+                                        highlightFirstRow && index === 0 ? "bg-primary/5 hover:bg-primary/10" : "",
+                                    ].filter(Boolean).join(" ") || undefined}
+                                    onClick={(event) => handleTableRowClick(event, row)}
+                                    onDoubleClick={(event) => handleTableRowDoubleClick(event, row)}
+                                >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell
                                             key={cell.id}

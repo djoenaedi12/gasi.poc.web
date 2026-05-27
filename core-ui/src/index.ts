@@ -151,7 +151,6 @@ export { DataTable, ServerDataTable } from './components/datatable/DataTable';
 export type { DataTableProps, ServerDataTableProps } from './components/datatable/DataTable';
 export { DataTableBulkDeleteAction } from './components/datatable/DataTableBulkDeleteAction';
 export { exportVisibleTableRowsToCsv } from './components/datatable/dataTableExport';
-export { DataTableFilterMenu } from './components/datatable/DataTableFilterMenu';
 export { DataTableRowActions, getDataTableRowActionsColumn } from './components/datatable/DataTableRowActions';
 export { DataTableSortableHeader } from './components/datatable/DataTableSortableHeader';
 export { buildDataTableFilter, buildSearchFilter, buildSearchRequest, combineFilters } from './components/datatable/dataTableUtils';
