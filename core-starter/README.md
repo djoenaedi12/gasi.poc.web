@@ -1,110 +1,224 @@
 # @gasi/core-starter
 
-Utility, hooks, dan komponen siap pakai untuk mengintegrasikan plugin system
-ke dalam aplikasi React. Depend ke `@gasi/core-api`.
+`@gasi/core-starter` berisi utility runtime untuk mengintegrasikan plugin system ke aplikasi React. Package ini bergantung pada `@gasi/core-api` dan menyediakan loader plugin UMD, hook untuk membaca extension/plugin, helper permission resource, dan session store berbasis Zustand.
 
-## Isi
+Gunakan package ini di host application dan plugin yang perlu akses runtime/session.
 
-```
+## Isi Package
+
+```text
 core-starter/
 └── src/
     ├── hooks/
-    │   ├── useExtensions.ts   # Hook untuk mengambil extension aktif pada suatu point
-    │   └── usePlugins.ts      # Hook untuk mengambil daftar semua plugin + state
-    ├── pluginLoader.ts        # Utility untuk load plugin UMD dari URL
+    │   ├── useExtensions.ts
+    │   ├── usePlugins.ts
+    │   └── useResourcePermissions.ts
     ├── stores/
-    │   └── useAppStore.ts     # Global session store
-    └── index.ts               # Public exports
+    │   └── useAppStore.ts
+    ├── index.ts
+    └── pluginLoader.ts
 ```
 
-## API
+## Export Utama
 
-### useExtensions
+```ts
+export { useExtensions } from './hooks/useExtensions';
+export { usePlugins } from './hooks/usePlugins';
+export { resourcePermission, useResourcePermissions } from './hooks/useResourcePermissions';
+export { loadExternalPlugins, loadAndStartPlugins } from './pluginLoader';
+export { useAppStore } from './stores/useAppStore';
+```
 
-Mengambil semua extension yang aktif pada suatu extension point.
-Otomatis re-render ketika ada plugin yang di-start atau di-stop.
+Type public:
+
+- `ResourcePermissions`
+- `AppUser`
+- `AppSession`
+- `MenuItem`
+
+## Plugin Loader
+
+### `loadExternalPlugins`
+
+Memuat file plugin UMD dari URL. File yang tidak ditemukan akan di-skip dengan warning, bukan menghentikan aplikasi.
+
+```ts
+import { loadExternalPlugins } from '@gasi/core-starter';
+
+await loadExternalPlugins([
+  '/plugins/plugin-auth.umd.js',
+  '/plugins/plugin-example.umd.js',
+]);
+```
+
+### `loadAndStartPlugins`
+
+Memuat UMD plugin lalu menjalankan semua plugin yang sudah terdaftar dengan state `registered`.
+
+```ts
+import { loadAndStartPlugins } from '@gasi/core-starter';
+
+await loadAndStartPlugins([
+  '/plugins/plugin-auth.umd.js',
+  '/plugins/plugin-example.umd.js',
+]);
+```
+
+Alur kerja:
+
+1. Fetch URL plugin untuk memastikan file tersedia.
+2. Tambahkan script ke `document.head`.
+3. Plugin UMD melakukan registration ke `pluginRegistry`.
+4. Loader membaca daftar plugin dari registry.
+5. Loader menjalankan `pluginRegistry.start` untuk plugin yang masih `registered`.
+
+## Hooks
+
+### `useExtensions`
+
+Mengambil extension aktif berdasarkan extension point. Hook akan re-render saat registry berubah.
 
 ```tsx
-import { useExtensions } from '@gasi/core-starter';
 import { ExtensionPoints } from '@gasi/core-api';
+import { useExtensions } from '@gasi/core-starter';
 
-function Dashboard() {
+function RouteDebug() {
   const routeExtensions = useExtensions(ExtensionPoints.ROUTE);
-
-  return (
-    <pre>{JSON.stringify(routeExtensions, null, 2)}</pre>
-  );
+  return <pre>{JSON.stringify(routeExtensions, null, 2)}</pre>;
 }
 ```
 
-### usePlugins
+### `usePlugins`
 
-Mengambil daftar semua plugin beserta state-nya (`registered`, `started`, `stopped`).
+Mengambil daftar plugin dan state lifecycle-nya.
 
 ```tsx
 import { usePlugins } from '@gasi/core-starter';
 
-function PluginManager() {
+function PluginList() {
   const plugins = usePlugins();
 
   return (
     <ul>
-      {plugins.map(p => (
-        <li key={p.id}>{p.name} — {p.state}</li>
+      {plugins.map((plugin) => (
+        <li key={plugin.id}>
+          {plugin.name} - {plugin.state}
+        </li>
       ))}
     </ul>
   );
 }
 ```
 
-### loadAndStartPlugins
+### `useResourcePermissions`
 
-Load plugin UMD dari daftar URL, lalu start semua yang berhasil di-load.
-Plugin yang file-nya tidak ada akan di-skip tanpa error.
+Membantu membentuk permission standar untuk resource.
 
-```ts
-import { loadAndStartPlugins } from '@gasi/core-starter';
+```tsx
+import { useResourcePermissions } from '@gasi/core-starter';
 
-await loadAndStartPlugins([
-  '/plugins/plugin-example.umd.js',
-  '/plugins/plugin-lain.umd.js',
-]);
+function EmployeeToolbar() {
+  const permissions = useResourcePermissions('employee');
+
+  return (
+    <>
+      {permissions.canCreate && <button>Create</button>}
+      {permissions.canDelete && <button>Delete</button>}
+    </>
+  );
+}
 ```
 
-## Dependency
+Helper string permission:
 
-- `@gasi/core-api` — kontrak plugin
-- `react` (peer) — untuk hooks dan komponen
+```ts
+import { resourcePermission } from '@gasi/core-starter';
 
-### useAppStore
+resourcePermission('employee', 'read'); // employee:read
+```
 
-Global session store. Diisi oleh plugin-auth setelah login atau restore session.
-Kalau plugin-auth tidak terpasang, `session` tetap `null`.
+## Session Store
+
+`useAppStore` adalah Zustand store untuk session aplikasi.
 
 ```ts
 import { useAppStore } from '@gasi/core-starter';
 
-// Di komponen React
-const { session, hasPermission, clearSession } = useAppStore();
+const session = useAppStore((state) => state.session);
+const hasPermission = useAppStore((state) => state.hasPermission);
 
-// Cek permission
-const canDelete = hasPermission('employee:delete');
+const canReadEmployee = hasPermission('employee:read');
+```
 
-// Akses user info
-const user = session?.user;
-const menus = session?.menus ?? [];
+Akses di luar component:
 
-// Programmatic (di luar React)
+```ts
 useAppStore.getState().setSession(sessionData);
 useAppStore.getState().clearSession();
 ```
 
-**Shape session:**
+Shape session:
+
 ```ts
 interface AppSession {
-  user:        { id, username, fullName };
-  roles:       string[];
-  permissions: string[];  // ['employee:read', 'employee:create']
-  menus:       MenuItem[];
+  user: AppUser;
+  roles: string[];
+  permissions: string[];
+  menus: MenuItem[];
 }
 ```
+
+Plugin auth bertanggung jawab mengisi session setelah login atau restore session. Jika plugin auth tidak terpasang, `session` tetap `null` dan permission check akan mengikuti state kosong.
+
+## Penggunaan di Platform App
+
+Contoh pola di host:
+
+```ts
+import { loadAndStartPlugins } from '@gasi/core-starter';
+
+const urls = [
+  '/plugins/plugin-auth.umd.js',
+  '/plugins/plugin-example.umd.js',
+];
+
+await loadAndStartPlugins(urls);
+```
+
+Lalu route host membaca extension:
+
+```tsx
+import { ExtensionPoints, resolvePermission } from '@gasi/core-api';
+import { useExtensions } from '@gasi/core-starter';
+
+const routeExtensions = useExtensions(ExtensionPoints.ROUTE);
+const guardExtensions = useExtensions(ExtensionPoints.AUTH_GUARD);
+```
+
+## Catatan Integrasi
+
+- `core-starter` membutuhkan React sebagai peer dependency.
+- Loader berjalan di browser karena menggunakan `fetch` dan `document`.
+- Plugin UMD harus dibuat dengan external global yang cocok dengan host: `React`, `GasiCoreApi`, `GasiCoreStarter`, dan `GasiCoreUi`.
+- Plugin yang gagal load tidak menghentikan plugin lain.
+- Plugin yang gagal start akan masuk state `error`.
+
+## Troubleshooting
+
+### Plugin tidak start
+
+Periksa apakah file plugin benar-benar melakukan:
+
+```ts
+pluginRegistry.register({ ... });
+```
+
+Jika script berhasil dimuat tetapi plugin tidak register, loader tidak punya plugin baru untuk di-start.
+
+### Hook tidak update
+
+Pastikan perubahan plugin dilakukan melalui `pluginRegistry.start` atau `pluginRegistry.stop`, karena hook mendengar event dari registry.
+
+### Permission selalu false
+
+Pastikan session store sudah diisi oleh plugin auth dan permission string sesuai format `{resource}:{action}`.
