@@ -10,6 +10,14 @@ export { createBaseService } from './lib/baseService';
 export { createBaseHooks } from './lib/baseHooks';
 export { createResourceRoutes } from './lib/createResourceRoutes';
 export type { ResourceRoutesConfig } from './lib/createResourceRoutes';
+export {
+    clearResourceCustom,
+    clearResourceCustoms,
+    getResourceCustom,
+    hasResourceCustom,
+    registerResourceCustom,
+} from './lib/resourceCustom';
+export type { ResourceCustom } from './lib/resourceCustom';
 export { formatDate, formatDateTime, daysSince } from './lib/date';
 export { generateTimeSlots, getCurrentTimeInRange } from './lib/time';
 export { changeLanguage, getLocale, registerTranslations, setLocale, supportedLocales, translate, useI18n } from './lib/i18n';

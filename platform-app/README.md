@@ -1,8 +1,8 @@
 # @gasi/platform-app
 
-`@gasi/platform-app` adalah aplikasi host React + Vite untuk frontend GASI. App ini memuat core packages, mengeksposnya sebagai global untuk plugin UMD, membaca manifest plugin, menjalankan plugin, lalu merender route dari extension yang didaftarkan plugin.
+`@gasi/platform-app` is the React + Vite host application for the GASI frontend. It loads the core packages, exposes them as globals for UMD plugins, reads the plugin manifest, starts plugins, and renders routes registered through plugin extensions.
 
-Fitur bisnis baru sebaiknya dibuat sebagai plugin. `platform-app` berperan sebagai shell, layout, runtime plugin, dan halaman dasar seperti dashboard/error page.
+New business features should usually be built as plugins. `platform-app` acts as the shell, layout, plugin runtime, and owner of base pages such as dashboard and error pages.
 
 ## Stack
 
@@ -18,7 +18,7 @@ Fitur bisnis baru sebaiknya dibuat sebagai plugin. `platform-app` berperan sebag
 - Axios
 - Lucide React
 
-## Struktur
+## Structure
 
 ```text
 platform-app/
@@ -39,15 +39,15 @@ platform-app/
 └── package.json
 ```
 
-## Menjalankan Lokal
+## Run Locally
 
-Dari root workspace:
+From the workspace root:
 
 ```bash
 npm run dev
 ```
 
-Atau dari workspace platform:
+Or directly through the platform workspace:
 
 ```bash
 npm run dev -w platform-app
@@ -59,7 +59,7 @@ npm run dev -w platform-app
 npm run build -w platform-app
 ```
 
-Preview hasil build:
+Preview the build:
 
 ```bash
 npm run preview -w platform-app
@@ -71,23 +71,23 @@ Lint:
 npm run lint -w platform-app
 ```
 
-## Runtime Plugin
+## Plugin Runtime
 
-Entry point runtime ada di `src/main.tsx`.
+The runtime entry point is `src/main.tsx`.
 
-Saat startup, app melakukan:
+On startup, the app:
 
-1. Import core packages:
+1. Imports core packages:
    - `@gasi/core-api`
    - `@gasi/core-starter`
    - `@gasi/core-ui`
-2. Expose core packages ke `window` supaya plugin UMD dapat memakai external global.
-3. Membaca `/plugins/manifest.json`.
-4. Menambahkan `/plugins/plugin-auth.umd.js` sebagai default plugin yang dicoba load pertama.
-5. Memanggil `loadAndStartPlugins`.
-6. Render React app setelah plugin selesai diproses.
+2. Exposes core packages on `window` so UMD plugins can use external globals.
+3. Reads `/plugins/manifest.json`.
+4. Adds `/plugins/plugin-auth.umd.js` as the default plugin loaded first.
+5. Calls `loadAndStartPlugins`.
+6. Renders the React app after plugin loading finishes.
 
-Global yang disediakan host:
+Globals provided by the host:
 
 ```ts
 window.GasiCoreApi;
@@ -97,15 +97,15 @@ window.React;
 window.ReactRouter;
 ```
 
-## Manifest Plugin
+## Plugin Manifest
 
-Manifest berada di:
+Manifest path:
 
 ```text
 public/plugins/manifest.json
 ```
 
-Format yang didukung:
+Supported format:
 
 ```json
 [
@@ -114,29 +114,29 @@ Format yang didukung:
 ]
 ```
 
-Host akan menggabungkan default plugin URL dengan isi manifest dan menghapus duplikasi.
+The host merges the default plugin URL with manifest entries and removes duplicates.
 
-Catatan:
+Notes:
 
-- `/plugins/plugin-auth.umd.js` selalu dicoba load lebih dulu dari `src/main.tsx`.
-- File plugin yang tidak ditemukan akan di-skip oleh loader dengan warning.
-- Plugin yang berhasil load harus mendaftarkan dirinya ke `pluginRegistry`.
+- `/plugins/plugin-auth.umd.js` is always attempted first from `src/main.tsx`.
+- Missing plugin files are skipped by the loader with a warning.
+- A loaded plugin must register itself with `pluginRegistry`.
 
-## Menambahkan Plugin ke Platform
+## Adding a Plugin to the Platform
 
-Build plugin:
+Build the plugin:
 
 ```bash
 npm run build -w plugins/plugin-example
 ```
 
-Salin hasil build ke:
+Copy the build output to:
 
 ```text
 platform-app/public/plugins/
 ```
 
-Tambahkan URL bundle ke manifest:
+Add the bundle URL to the manifest:
 
 ```json
 [
@@ -144,27 +144,27 @@ Tambahkan URL bundle ke manifest:
 ]
 ```
 
-Jika memakai GASI CLI, proses deploy web akan menyalin bundle dan memperbarui manifest.
+If you use GASI CLI, web deploy copies the bundle and updates the manifest for you.
 
 ## Routing
 
-Route platform ada di `src/routes/index.tsx`.
+Platform routes are defined in `src/routes/index.tsx`.
 
-Route bawaan:
+Built-in routes:
 
 - `/dashboard`
 - `/403`
 - `/404`
 - fallback `*`
 
-Route plugin berasal dari extension point `ExtensionPoints.ROUTE`.
+Plugin routes come from `ExtensionPoints.ROUTE`.
 
 ```tsx
 const routeExts = useExtensions(ExtensionPoints.ROUTE);
 const pluginRoutes = routeExts.flatMap((ext) => ext.routes ?? []);
 ```
 
-Route public atau blank layout:
+Public or blank-layout route:
 
 ```ts
 {
@@ -175,7 +175,7 @@ Route public atau blank layout:
 }
 ```
 
-Route dashboard/protected:
+Dashboard/protected route:
 
 ```ts
 {
@@ -186,27 +186,27 @@ Route dashboard/protected:
 }
 ```
 
-Jika auth guard tersedia, route protected dibungkus guard. Jika auth guard tidak tersedia, route tetap dirender tanpa guard.
+If an auth guard is available, protected routes are wrapped by it. If no auth guard is available, protected routes are still rendered without a guard.
 
 ## Layout
 
-Dashboard route dirender di dalam `DashboardLayout`.
+Dashboard routes are rendered inside `DashboardLayout`.
 
-Blank/public route dirender tanpa dashboard layout. Gunakan pola ini untuk halaman login, callback auth, atau halaman full-screen lain.
+Blank/public routes are rendered without the dashboard layout. Use this for login pages, auth callbacks, or other full-screen pages.
 
 ## API Proxy
 
-`vite.config.ts` mem-proxy:
+`vite.config.ts` proxies:
 
 ```text
 /platform-app -> http://localhost:8080
 ```
 
-Jika backend berjalan di host/port lain, ubah bagian `server.proxy`.
+If the backend runs on another host or port, update `server.proxy`.
 
-## Core Package Alias
+## Core Package Aliases
 
-`vite.config.ts` mengarahkan package internal ke source:
+`vite.config.ts` maps internal packages to source:
 
 ```ts
 alias: {
@@ -216,37 +216,37 @@ alias: {
 }
 ```
 
-Karena itu perubahan di core package langsung terasa saat dev server berjalan.
+Because of this, changes in core packages are visible immediately while the dev server is running.
 
-## Konvensi Perubahan
+## Change Conventions
 
-- Tambahkan fitur bisnis sebagai plugin, bukan langsung di platform shell.
-- Tambahkan komponen reusable ke `core-ui`.
-- Tambahkan kontrak plugin ke `core-api`.
-- Tambahkan runtime helper plugin/session ke `core-starter`.
-- Jaga `src/main.tsx` tetap fokus pada bootstrap.
-- Jaga `src/routes/index.tsx` tetap fokus pada komposisi route host dan plugin.
+- Add business features as plugins, not directly in the platform shell.
+- Add reusable components to `core-ui`.
+- Add plugin contracts to `core-api`.
+- Add plugin/session runtime helpers to `core-starter`.
+- Keep `src/main.tsx` focused on bootstrap.
+- Keep `src/routes/index.tsx` focused on host and plugin route composition.
 
 ## Troubleshooting
 
-### Aplikasi kosong setelah startup
+### The app is blank after startup
 
-Periksa console browser. Error di plugin UMD bisa terjadi sebelum React app dirender karena app menunggu plugin loader selesai.
+Check the browser console. A UMD plugin error can happen before the React app renders because startup waits for plugin loading.
 
-### Plugin tidak muncul
+### Plugin does not appear
 
-Periksa:
+Check that:
 
-- file bundle ada di `public/plugins/`;
-- manifest berisi URL yang benar;
-- URL dapat diakses dari browser;
-- plugin memanggil `pluginRegistry.register`;
-- plugin route menggunakan `ExtensionPoints.ROUTE`.
+- the bundle exists in `public/plugins/`;
+- the manifest contains the correct URL;
+- the URL is accessible from the browser;
+- the plugin calls `pluginRegistry.register`;
+- the plugin route uses `ExtensionPoints.ROUTE`.
 
-### Login tidak muncul
+### Login does not appear
 
-Pastikan `plugin-auth.umd.js` tersedia di `public/plugins/` atau plugin auth masuk manifest dengan URL yang benar.
+Make sure `plugin-auth.umd.js` exists in `public/plugins/`, or that the auth plugin is listed in the manifest with the correct URL.
 
-### API request tidak sampai backend
+### API requests do not reach the backend
 
-Pastikan backend berjalan di `http://localhost:8080` atau sesuaikan proxy Vite.
+Make sure the backend is running on `http://localhost:8080`, or update the Vite proxy.

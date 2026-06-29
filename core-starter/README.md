@@ -1,10 +1,10 @@
 # @gasi/core-starter
 
-`@gasi/core-starter` berisi utility runtime untuk mengintegrasikan plugin system ke aplikasi React. Package ini bergantung pada `@gasi/core-api` dan menyediakan loader plugin UMD, hook untuk membaca extension/plugin, helper permission resource, dan session store berbasis Zustand.
+`@gasi/core-starter` provides runtime utilities for integrating the plugin system into a React app. It depends on `@gasi/core-api` and provides the UMD plugin loader, hooks for reading extensions and plugins, resource permission helpers, and a Zustand-based session store.
 
-Gunakan package ini di host application dan plugin yang perlu akses runtime/session.
+Use this package in the host app and in plugins that need runtime or session access.
 
-## Isi Package
+## Package Contents
 
 ```text
 core-starter/
@@ -19,7 +19,7 @@ core-starter/
     └── pluginLoader.ts
 ```
 
-## Export Utama
+## Main Exports
 
 ```ts
 export { useExtensions } from './hooks/useExtensions';
@@ -29,7 +29,7 @@ export { loadExternalPlugins, loadAndStartPlugins } from './pluginLoader';
 export { useAppStore } from './stores/useAppStore';
 ```
 
-Type public:
+Public types:
 
 - `ResourcePermissions`
 - `AppUser`
@@ -40,7 +40,7 @@ Type public:
 
 ### `loadExternalPlugins`
 
-Memuat file plugin UMD dari URL. File yang tidak ditemukan akan di-skip dengan warning, bukan menghentikan aplikasi.
+Loads UMD plugin files from URLs. Missing files are skipped with a warning instead of stopping the app.
 
 ```ts
 import { loadExternalPlugins } from '@gasi/core-starter';
@@ -53,7 +53,7 @@ await loadExternalPlugins([
 
 ### `loadAndStartPlugins`
 
-Memuat UMD plugin lalu menjalankan semua plugin yang sudah terdaftar dengan state `registered`.
+Loads UMD plugins and starts all registered plugins that are still in the `registered` state.
 
 ```ts
 import { loadAndStartPlugins } from '@gasi/core-starter';
@@ -64,19 +64,19 @@ await loadAndStartPlugins([
 ]);
 ```
 
-Alur kerja:
+Workflow:
 
-1. Fetch URL plugin untuk memastikan file tersedia.
-2. Tambahkan script ke `document.head`.
-3. Plugin UMD melakukan registration ke `pluginRegistry`.
-4. Loader membaca daftar plugin dari registry.
-5. Loader menjalankan `pluginRegistry.start` untuk plugin yang masih `registered`.
+1. Fetch each plugin URL to confirm it is available.
+2. Add the script to `document.head`.
+3. The plugin UMD bundle registers itself with `pluginRegistry`.
+4. The loader reads the plugin list from the registry.
+5. The loader calls `pluginRegistry.start` for plugins that are still `registered`.
 
 ## Hooks
 
 ### `useExtensions`
 
-Mengambil extension aktif berdasarkan extension point. Hook akan re-render saat registry berubah.
+Reads active extensions for an extension point. The hook re-renders when the registry changes.
 
 ```tsx
 import { ExtensionPoints } from '@gasi/core-api';
@@ -90,7 +90,7 @@ function RouteDebug() {
 
 ### `usePlugins`
 
-Mengambil daftar plugin dan state lifecycle-nya.
+Reads all plugins and their lifecycle states.
 
 ```tsx
 import { usePlugins } from '@gasi/core-starter';
@@ -112,7 +112,7 @@ function PluginList() {
 
 ### `useResourcePermissions`
 
-Membantu membentuk permission standar untuk resource.
+Builds common permission checks for a resource.
 
 ```tsx
 import { useResourcePermissions } from '@gasi/core-starter';
@@ -129,7 +129,7 @@ function EmployeeToolbar() {
 }
 ```
 
-Helper string permission:
+Permission string helper:
 
 ```ts
 import { resourcePermission } from '@gasi/core-starter';
@@ -139,7 +139,7 @@ resourcePermission('employee', 'read'); // employee:read
 
 ## Session Store
 
-`useAppStore` adalah Zustand store untuk session aplikasi.
+`useAppStore` is a Zustand store for application session state.
 
 ```ts
 import { useAppStore } from '@gasi/core-starter';
@@ -150,14 +150,14 @@ const hasPermission = useAppStore((state) => state.hasPermission);
 const canReadEmployee = hasPermission('employee:read');
 ```
 
-Akses di luar component:
+Access outside React components:
 
 ```ts
 useAppStore.getState().setSession(sessionData);
 useAppStore.getState().clearSession();
 ```
 
-Shape session:
+Session shape:
 
 ```ts
 interface AppSession {
@@ -168,11 +168,11 @@ interface AppSession {
 }
 ```
 
-Plugin auth bertanggung jawab mengisi session setelah login atau restore session. Jika plugin auth tidak terpasang, `session` tetap `null` dan permission check akan mengikuti state kosong.
+The auth plugin is responsible for filling the session after login or session restore. If no auth plugin is installed, `session` remains `null` and permission checks follow the empty state.
 
-## Penggunaan di Platform App
+## Usage in Platform App
 
-Contoh pola di host:
+Typical host pattern:
 
 ```ts
 import { loadAndStartPlugins } from '@gasi/core-starter';
@@ -185,7 +185,7 @@ const urls = [
 await loadAndStartPlugins(urls);
 ```
 
-Lalu route host membaca extension:
+The host routes then read extensions:
 
 ```tsx
 import { ExtensionPoints, resolvePermission } from '@gasi/core-api';
@@ -195,30 +195,30 @@ const routeExtensions = useExtensions(ExtensionPoints.ROUTE);
 const guardExtensions = useExtensions(ExtensionPoints.AUTH_GUARD);
 ```
 
-## Catatan Integrasi
+## Integration Notes
 
-- `core-starter` membutuhkan React sebagai peer dependency.
-- Loader berjalan di browser karena menggunakan `fetch` dan `document`.
-- Plugin UMD harus dibuat dengan external global yang cocok dengan host: `React`, `GasiCoreApi`, `GasiCoreStarter`, dan `GasiCoreUi`.
-- Plugin yang gagal load tidak menghentikan plugin lain.
-- Plugin yang gagal start akan masuk state `error`.
+- `core-starter` requires React as a peer dependency.
+- The loader runs in the browser because it uses `fetch` and `document`.
+- UMD plugins must be built with globals that match the host: `React`, `GasiCoreApi`, `GasiCoreStarter`, and `GasiCoreUi`.
+- A plugin that fails to load does not stop other plugins.
+- A plugin that fails to start enters the `error` state.
 
 ## Troubleshooting
 
-### Plugin tidak start
+### Plugin does not start
 
-Periksa apakah file plugin benar-benar melakukan:
+Check that the plugin file calls:
 
 ```ts
 pluginRegistry.register({ ... });
 ```
 
-Jika script berhasil dimuat tetapi plugin tidak register, loader tidak punya plugin baru untuk di-start.
+If the script loads but does not register a plugin, the loader has no new plugin to start.
 
-### Hook tidak update
+### Hook does not update
 
-Pastikan perubahan plugin dilakukan melalui `pluginRegistry.start` atau `pluginRegistry.stop`, karena hook mendengar event dari registry.
+Make sure plugin changes happen through `pluginRegistry.start` or `pluginRegistry.stop`, because hooks listen to registry events.
 
-### Permission selalu false
+### Permission is always false
 
-Pastikan session store sudah diisi oleh plugin auth dan permission string sesuai format `{resource}:{action}`.
+Make sure the session store is populated by the auth plugin and that the permission string uses `{resource}:{action}` format.

@@ -1,10 +1,10 @@
 # @gasi/core-api
 
-`@gasi/core-api` adalah package kontrak untuk plugin system frontend GASI. Package ini tidak berisi UI dan tidak memuat plugin dari network. Tugasnya adalah menyediakan type, constant, registry, dan helper permission yang dipakai bersama oleh host application dan plugin.
+`@gasi/core-api` is the contract package for the GASI frontend plugin system. It does not contain UI code and does not load plugins from the network. Its job is to provide shared types, constants, the plugin registry, and permission helpers used by both the host app and plugins.
 
-Gunakan package ini saat membuat plugin, host runtime, atau library yang perlu berinteraksi dengan plugin registry.
+Use this package when creating a plugin, host runtime, or library that needs to interact with the plugin registry.
 
-## Isi Package
+## Package Contents
 
 ```text
 core-api/
@@ -17,7 +17,7 @@ core-api/
         └── pluginDefinition.types.ts
 ```
 
-## Export Utama
+## Main Exports
 
 ```ts
 export { ExtensionPoints } from './types/extensionPoints.types';
@@ -25,7 +25,7 @@ export { Actions, resolvePermission } from './types/pluginDefinition.types';
 export { PluginRegistry, pluginRegistry } from './registry/pluginRegistry';
 ```
 
-Type public yang sering dipakai:
+Common public types:
 
 - `PluginDefinition`
 - `PluginExtension`
@@ -45,10 +45,10 @@ ExtensionPoints.ROUTE;
 ExtensionPoints.AUTH_GUARD;
 ```
 
-| Extension Point | Fungsi |
+| Extension Point | Purpose |
 | --- | --- |
-| `ROUTE` | Plugin mendaftarkan halaman yang akan dirender oleh host app. |
-| `AUTH_GUARD` | Plugin auth mendaftarkan wrapper route dan function permission checker. |
+| `ROUTE` | A plugin registers pages that the host app can render. |
+| `AUTH_GUARD` | An auth plugin registers a route wrapper and permission checker. |
 
 ## Actions
 
@@ -63,7 +63,7 @@ Actions.DOWNLOAD;
 Actions.UPLOAD;
 ```
 
-Permission route dibentuk dari `resource` dan `action`.
+Route permissions are built from `resource` and `action`.
 
 ```ts
 import { Actions, resolvePermission } from '@gasi/core-api';
@@ -78,7 +78,7 @@ const permission = resolvePermission({
 // employee:read
 ```
 
-Jika route tidak memiliki `resource`, `resolvePermission` mengembalikan `undefined` dan route dianggap tidak membutuhkan permission spesifik.
+If a route has no `resource`, `resolvePermission` returns `undefined` and the route has no specific permission requirement.
 
 ## Route Definition
 
@@ -95,22 +95,22 @@ interface RouteDefinition {
 }
 ```
 
-Panduan field:
+Field guide:
 
-| Field | Keterangan |
+| Field | Description |
 | --- | --- |
-| `path` | Path React Router, contoh `/employees` atau `/employees/:id`. |
-| `component` | React component yang dirender. |
-| `public` | Jika `true`, route tidak dibungkus auth guard. Cocok untuk login atau callback auth. |
-| `layout` | `dashboard` atau `blank`. Default host adalah dashboard untuk route non-public. |
-| `title` | Judul opsional untuk menu, breadcrumb, tab, atau observability. |
-| `order` | Urutan opsional saat host menyusun route. |
-| `resource` | Nama resource permission, contoh `employee`. |
-| `action` | Action permission. Default permission helper adalah `read`. |
+| `path` | React Router path, for example `/employees` or `/employees/:id`. |
+| `component` | React component rendered for the route. |
+| `public` | If `true`, the route is not wrapped by the auth guard. Useful for login or auth callback pages. |
+| `layout` | `dashboard` or `blank`. The host defaults to dashboard for non-public routes. |
+| `title` | Optional title for menus, breadcrumbs, tabs, or observability. |
+| `order` | Optional ordering value when the host sorts routes. |
+| `resource` | Permission resource name, for example `employee`. |
+| `action` | Permission action. The permission helper defaults to `read`. |
 
 ## Plugin Definition
 
-Setiap plugin mendaftarkan dirinya ke singleton `pluginRegistry`.
+Every plugin registers itself with the singleton `pluginRegistry`.
 
 ```ts
 import { Actions, ExtensionPoints, pluginRegistry } from '@gasi/core-api';
@@ -144,16 +144,16 @@ pluginRegistry.register({
 });
 ```
 
-ID plugin harus unik. Jika ID yang sama didaftarkan dua kali, registry akan memberi warning dan mengabaikan registration kedua.
+Plugin IDs must be unique. If the same ID is registered twice, the registry logs a warning and ignores the second registration.
 
 ## Auth Guard Extension
 
-Plugin auth dapat mendaftarkan guard route dan permission checker.
+An auth plugin can register a route guard and permission checker.
 
 ```ts
 import { ExtensionPoints, pluginRegistry } from '@gasi/core-api';
-import { PermissionGuard } from './components/PermissionGuard';
 import { useAppStore } from '@gasi/core-starter';
+import { PermissionGuard } from './components/PermissionGuard';
 
 pluginRegistry.register({
   id: 'plugin.auth',
@@ -172,13 +172,13 @@ pluginRegistry.register({
 });
 ```
 
-Host app akan menggunakan guard pertama yang tersedia untuk membungkus protected route.
+The host app uses the first available guard to wrap protected routes.
 
 ## Plugin Registry
 
-`PluginRegistry` mengelola lifecycle plugin dan extension aktif.
+`PluginRegistry` manages plugin lifecycle and active extensions.
 
-State plugin:
+Plugin states:
 
 - `registered`
 - `starting`
@@ -187,10 +187,10 @@ State plugin:
 - `stopped`
 - `error`
 
-Operasi utama:
+Main operations:
 
 ```ts
-import { pluginRegistry, ExtensionPoints } from '@gasi/core-api';
+import { ExtensionPoints, pluginRegistry } from '@gasi/core-api';
 
 pluginRegistry.register(pluginDefinition);
 await pluginRegistry.start('plugin.hr');
@@ -201,7 +201,7 @@ const plugin = pluginRegistry.getPlugin('plugin.hr');
 const routeExtensions = pluginRegistry.getExtensions(ExtensionPoints.ROUTE);
 ```
 
-Mendengar event registry:
+Listen to registry events:
 
 ```ts
 const unsubscribe = pluginRegistry.onEvent((event) => {
@@ -213,19 +213,19 @@ unsubscribe();
 
 ## Lifecycle
 
-1. Plugin memanggil `pluginRegistry.register`.
-2. Registry menyimpan plugin dengan state `registered`.
-3. Host memanggil `pluginRegistry.start(plugin.id)`.
-4. Registry menjalankan `onStart` jika tersedia.
-5. Extension plugin ditambahkan ke map extension aktif.
-6. State plugin menjadi `started`.
-7. Saat stop, registry menjalankan `onStop` lalu menghapus extension plugin dari extension aktif.
+1. The plugin calls `pluginRegistry.register`.
+2. The registry stores the plugin with state `registered`.
+3. The host calls `pluginRegistry.start(plugin.id)`.
+4. The registry runs `onStart` if provided.
+5. The plugin extensions are added to the active extension map.
+6. The plugin state becomes `started`.
+7. On stop, the registry runs `onStop` and removes the plugin extensions.
 
-Jika `onStart` gagal, state menjadi `error` dan extension plugin tidak dipasang.
+If `onStart` fails, the plugin state becomes `error` and its extensions are not activated.
 
-## Catatan Penggunaan
+## Usage Notes
 
-- Package ini source-only di workspace. Import dari `@gasi/core-api` diarahkan ke `src/index.ts`.
-- Jangan menaruh dependency UI di `core-api`.
-- Jangan menjalankan side effect selain registration plugin di file entry plugin.
-- Route public seperti login sebaiknya memakai `public: true` atau `layout: 'blank'`.
+- This package is source-only in the workspace. Imports from `@gasi/core-api` resolve to `src/index.ts`.
+- Do not add UI dependencies to `core-api`.
+- Keep plugin entry side effects limited to plugin registration.
+- Public routes such as login pages should use `public: true` or `layout: 'blank'`.

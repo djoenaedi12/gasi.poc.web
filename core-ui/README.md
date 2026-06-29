@@ -1,51 +1,51 @@
 # @gasi/core-ui
 
-`@gasi/core-ui` adalah shared UI dan application helper untuk platform GASI. Package ini dipakai oleh `platform-app` dan plugin frontend agar tampilan, pola form, data table, service API, i18n, dan toast tetap konsisten.
+`@gasi/core-ui` is the shared UI and application helper package for the GASI platform. It is used by `platform-app` and frontend plugins so UI, forms, data tables, API services, i18n, and toast behavior stay consistent.
 
-Package ini source-only di npm workspace dan diekspor melalui `src/index.ts`.
+This package is source-only in the npm workspace and is exported through `src/index.ts`.
 
-## Isi Package
+## Package Contents
 
 ```text
 core-ui/
 └── src/
     ├── components/
     │   ├── ui/          # Base UI components
-    │   ├── molecules/   # Form field, picker, dialog, stepper
-    │   ├── organisms/   # Layout dan resource page
-    │   └── datatable/   # DataTable, server table, action, export
+    │   ├── molecules/   # Form fields, pickers, dialogs, steppers
+    │   ├── organisms/   # Layout and resource pages
+    │   └── datatable/   # DataTable, server table, actions, export
     ├── hooks/
     ├── lib/
     ├── types/
     └── index.ts
 ```
 
-## Kapan Menggunakan
+## When to Use
 
-Gunakan `@gasi/core-ui` saat:
+Use `@gasi/core-ui` when you are:
 
-- membuat page di `platform-app`;
-- membuat plugin frontend;
-- membutuhkan komponen form standar;
-- membutuhkan data table dengan filter, sorting, pagination, bulk action, atau export;
-- membuat service CRUD standar;
-- membuat TanStack Query hooks standar;
-- menampilkan toast atau error form dari response API;
-- memakai i18n ringan di plugin.
+- building a page in `platform-app`;
+- building a frontend plugin;
+- using standard form components;
+- using data tables with filters, sorting, pagination, bulk actions, or export;
+- creating standard CRUD services;
+- creating standard TanStack Query hooks;
+- showing toast messages or applying API validation errors to a form;
+- using lightweight i18n inside a plugin.
 
-## Export Utama
+## Main Exports
 
-Kategori export:
+Export categories:
 
-- base UI: `Button`, `Input`, `Select`, `Dialog`, `DropdownMenu`, `Tabs`, `Table`, `Tooltip`, dan lainnya;
-- form component: `FormInput`, `FormSelect`, `FormDatePicker`, `FormLookupPicker`, `FormArrayTable`, dan lainnya;
-- layout/resource: `AppHeader`, `AppSidebar`, `PageHeader`, `ResourceListPage`;
+- base UI: `Button`, `Input`, `Select`, `Dialog`, `DropdownMenu`, `Tabs`, `Table`, `Tooltip`, and others;
+- form components: `FormInput`, `FormSelect`, `FormDatePicker`, `FormLookupPicker`, `FormArrayTable`, and others;
+- layout/resource components: `AppHeader`, `AppSidebar`, `PageHeader`, `ResourceListPage`;
 - data table: `DataTable`, `ServerDataTable`, `DataTableSortableHeader`, `DataTableRowActions`;
-- service/query helper: `api`, `createBaseService`, `createBaseHooks`;
-- utility: `cn`, date/time helper, form error helper, toast, i18n;
-- type API: `ApiResponse`, `PageResult`, `SearchRequest`, dan type lain dari `types/api.types`.
+- service/query helpers: `api`, `createBaseService`, `createBaseHooks`;
+- utilities: `cn`, date/time helpers, form error helpers, toast, i18n;
+- API types: `ApiResponse`, `PageResult`, `SearchRequest`, and other types from `types/api.types`.
 
-Import umum:
+Common import:
 
 ```ts
 import {
@@ -61,7 +61,7 @@ import {
 
 ## Base Service
 
-`createBaseService` membuat service CRUD standar untuk endpoint API yang mengikuti pola platform.
+`createBaseService` creates a standard CRUD service for platform-style API endpoints.
 
 ```ts
 import { createBaseService } from '@gasi/core-ui';
@@ -80,7 +80,7 @@ export const employeeService = createBaseService<
 >('/platform-app/api/v1/employees');
 ```
 
-Method yang tersedia:
+Available methods:
 
 | Method | Endpoint |
 | --- | --- |
@@ -94,7 +94,7 @@ Method yang tersedia:
 
 ## Base Hooks
 
-`createBaseHooks` membuat hook TanStack Query dari service.
+`createBaseHooks` creates TanStack Query hooks from a service.
 
 ```ts
 import { createBaseHooks } from '@gasi/core-ui';
@@ -112,11 +112,27 @@ export const {
 } = employeeHooks;
 ```
 
-Pola ini membantu plugin memakai query key dan invalidation yang konsisten.
+This keeps query keys and invalidation behavior consistent across plugins.
+
+## Resource Custom Registry
+
+Generated web resources can read optional custom behavior through a shared
+registry. No custom file is required by default; register one only when a
+resource needs custom UI behavior.
+
+```ts
+import { registerResourceCustom } from '@gasi/core-ui';
+import { employeeCustom } from './features/employees/custom/employeeCustom';
+
+registerResourceCustom('employee', employeeCustom);
+```
+
+Generated code reads the registry with `getResourceCustom`. If nothing is
+registered, it receives an empty custom object.
 
 ## Form Components
 
-Komponen form dibangun untuk `react-hook-form`.
+Form components are designed for `react-hook-form`.
 
 ```tsx
 import { FormInput, FormSelect, FormSwitch } from '@gasi/core-ui';
@@ -149,7 +165,7 @@ function EmployeeForm() {
 }
 ```
 
-Form component yang umum:
+Common form components:
 
 - `FormInput`
 - `FormTextarea`
@@ -166,7 +182,7 @@ Form component yang umum:
 
 ## Lookup
 
-Gunakan `LookupPicker` atau `FormLookupPicker` untuk memilih data referensi dari endpoint lookup.
+Use `LookupPicker` or `FormLookupPicker` to select reference data from lookup endpoints.
 
 ```tsx
 import { FormLookupPicker } from '@gasi/core-ui';
@@ -179,7 +195,7 @@ import { FormLookupPicker } from '@gasi/core-ui';
 />;
 ```
 
-Preset lookup biasanya diletakkan di feature plugin agar bisa dipakai ulang oleh form dan filter table.
+Lookup presets usually live in the plugin feature so they can be reused by forms and table filters.
 
 ## Data Table
 
@@ -206,7 +222,7 @@ import { ServerDataTable } from '@gasi/core-ui';
 />;
 ```
 
-Helper filter/search:
+Search and filter helpers:
 
 ```ts
 import {
@@ -219,11 +235,11 @@ import {
 
 ## Resource List Page
 
-`ResourceListPage` menyediakan pola list page yang sering dipakai generator resource.
+`ResourceListPage` provides the standard list-page pattern used by generated resources.
 
-Gunakan komponen ini saat ingin page list dengan behavior standar platform, lalu custom detailnya di feature masing-masing.
+Use it when you need a list page with platform-standard behavior and feature-specific details.
 
-## Toast dan Error Form
+## Toast and Form Errors
 
 ```ts
 import { appToast, applyApiFieldErrors } from '@gasi/core-ui';
@@ -234,7 +250,7 @@ appToast.error('Failed to save data');
 applyApiFieldErrors(form, error);
 ```
 
-`applyApiFieldErrors` membantu menempelkan validation error API ke field `react-hook-form`.
+`applyApiFieldErrors` maps API validation errors onto `react-hook-form` fields.
 
 ## I18n
 
@@ -255,7 +271,7 @@ setLocale('id');
 translate('employee.title');
 ```
 
-Di component:
+Inside a component:
 
 ```tsx
 const t = useI18n();
@@ -264,7 +280,7 @@ return <h1>{t('employee.title')}</h1>;
 
 ## Styling
 
-Gunakan utility `cn` untuk menggabungkan class Tailwind:
+Use `cn` to combine Tailwind classes:
 
 ```ts
 import { cn } from '@gasi/core-ui';
@@ -272,37 +288,37 @@ import { cn } from '@gasi/core-ui';
 cn('flex items-center', active && 'text-primary');
 ```
 
-Package ini mengandalkan styling dari host app. Plugin tidak perlu membawa Tailwind runtime sendiri, tetapi class yang dipakai plugin harus tersedia dalam build host/plugin.
+This package relies on styles provided by the host app. Plugins do not need to ship their own Tailwind runtime, but classes used by plugins must be visible to the host/plugin build.
 
-## Dependency Penting
+## Important Dependencies
 
-- React dan React DOM sebagai peer dependency.
-- React Router sebagai peer dependency untuk integrasi route.
-- Tailwind CSS sebagai peer dependency untuk styling.
-- TanStack Query dan TanStack Table untuk data fetching/table.
-- Axios untuk HTTP client.
-- React Hook Form dan Zod untuk form dan validasi.
-- Lucide React untuk icon.
+- React and React DOM as peer dependencies.
+- React Router as a peer dependency for route integration.
+- Tailwind CSS as a peer dependency for styling.
+- TanStack Query and TanStack Table for data fetching and tables.
+- Axios for HTTP.
+- React Hook Form and Zod for forms and validation.
+- Lucide React for icons.
 
-## Panduan Kontribusi
+## Contribution Guidelines
 
-- Export komponen baru dari `src/index.ts` jika perlu dipakai oleh platform atau plugin.
-- Letakkan komponen base di `components/ui`.
-- Letakkan komponen gabungan field/dialog/picker di `components/molecules`.
-- Letakkan layout atau komponen page-level di `components/organisms`.
-- Hindari menaruh logic spesifik feature bisnis di `core-ui`.
-- Pertahankan API component tetap stabil karena dipakai oleh plugin generated.
+- Export new reusable components from `src/index.ts`.
+- Put base components in `components/ui`.
+- Put combined fields, dialogs, and pickers in `components/molecules`.
+- Put layout or page-level components in `components/organisms`.
+- Avoid business-feature-specific logic in `core-ui`.
+- Keep component APIs stable because generated plugins depend on them.
 
 ## Troubleshooting
 
-### Import tidak ditemukan
+### Import cannot be found
 
-Pastikan komponen atau helper sudah diekspor dari `core-ui/src/index.ts`.
+Make sure the component or helper is exported from `core-ui/src/index.ts`.
 
-### Style tidak muncul
+### Styles do not appear
 
-Pastikan class Tailwind terdeteksi oleh build host/plugin dan CSS platform sudah memuat Tailwind.
+Make sure Tailwind can detect the classes used by the host/plugin build and that the platform CSS loads Tailwind.
 
-### Error API tidak tampil di form
+### API errors do not appear on the form
 
-Pastikan response backend mengikuti shape error yang didukung helper `applyApiFieldErrors`, dan nama field form sama dengan field error backend.
+Make sure the backend response shape is supported by `applyApiFieldErrors`, and that form field names match backend error field names.

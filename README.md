@@ -1,21 +1,21 @@
 # GASI Web
 
-GASI Web adalah workspace frontend untuk aplikasi GASI. Repo ini berisi host React yang menjalankan aplikasi utama, package internal untuk kontrak plugin, runtime loader, shared UI, dan plugin frontend yang dapat dimuat secara dinamis.
+GASI Web is the frontend workspace for the GASI application. It contains the React host app, internal packages for the plugin contract and runtime, shared UI components, and frontend plugins that can be loaded dynamically.
 
-README ini membantu developer baru memahami pembagian module, menjalankan aplikasi lokal, dan mengikuti alur kerja plugin.
+This README is written for new developers who need to understand the workspace structure, run the app locally, and follow the plugin workflow.
 
-## Struktur Workspace
+## Workspace Structure
 
 ```text
 gasi-web/
-├── core-api/          # Kontrak plugin, extension point, registry, dan type public
-├── core-starter/      # Runtime helper: plugin loader, hooks, session store
-├── core-ui/           # Shared UI, data table, form component, service helper
-├── platform-app/      # Aplikasi host React + Vite
-└── plugins/           # Plugin frontend berbasis UMD
+├── core-api/          # Plugin contracts, extension points, registry, and public types
+├── core-starter/      # Runtime helpers: plugin loader, hooks, session store
+├── core-ui/           # Shared UI, data table, form components, service helpers
+├── platform-app/      # React + Vite host application
+└── plugins/           # Frontend plugins built as UMD bundles
 ```
 
-Workspace npm didefinisikan di `package.json`:
+The npm workspaces are defined in `package.json`:
 
 ```json
 {
@@ -29,17 +29,17 @@ Workspace npm didefinisikan di `package.json`:
 }
 ```
 
-## Module Utama
+## Main Modules
 
-| Module | Fungsi |
+| Module | Purpose |
 | --- | --- |
-| `core-api` | Kontrak dasar plugin system: `PluginDefinition`, `ExtensionPoints`, `Actions`, `PluginRegistry`, dan `resolvePermission`. |
-| `core-starter` | Utility runtime untuk host app: load plugin UMD, start plugin, membaca extension aktif, membaca daftar plugin, dan session store. |
-| `core-ui` | Komponen dan helper UI bersama: Shadcn base component, form component, data table, layout component, axios instance, base service, base hooks, i18n, toast. |
-| `platform-app` | Host application yang expose core libraries ke `window`, membaca manifest plugin, start plugin, dan render route dari extension. |
-| `plugins/*` | Plugin frontend. Setiap plugin build menjadi UMD bundle yang dapat dimuat dari `platform-app/public/plugins/`. |
+| `core-api` | Base plugin system contract: `PluginDefinition`, `ExtensionPoints`, `Actions`, `PluginRegistry`, and `resolvePermission`. |
+| `core-starter` | Runtime utilities for the host app: load UMD plugins, start plugins, read active extensions, read plugin states, and manage session state. |
+| `core-ui` | Shared UI and application helpers: base components, form components, data table, layout components, axios instance, base service, base hooks, i18n, and toast. |
+| `platform-app` | Host application that exposes core libraries on `window`, reads the plugin manifest, starts plugins, and renders plugin routes. |
+| `plugins/*` | Frontend plugins. Each plugin builds to a UMD bundle that can be loaded from `platform-app/public/plugins/`. |
 
-## Dependency Arah Tinggi
+## Dependency Direction
 
 ```text
 core-api
@@ -55,64 +55,64 @@ core-api + core-ui + optional core-starter
   └── plugins/*
 ```
 
-Aturan praktis:
+Practical rules:
 
-- Plugin yang hanya mendaftarkan route cukup menggunakan `@gasi/core-api`.
-- Plugin yang memakai komponen UI, service helper, atau data table menggunakan `@gasi/core-ui`.
-- Plugin auth atau plugin yang butuh session/runtime helper dapat menggunakan `@gasi/core-starter`.
-- `platform-app` adalah host, bukan tempat utama menaruh fitur bisnis baru. Fitur bisnis baru sebaiknya masuk ke plugin.
+- A plugin that only registers routes can depend on `@gasi/core-api`.
+- A plugin that uses UI components, service helpers, or data tables should depend on `@gasi/core-ui`.
+- Auth plugins or plugins that need session/runtime helpers can depend on `@gasi/core-starter`.
+- `platform-app` is the host shell. New business features should usually live in plugins.
 
-## Prasyarat
+## Prerequisites
 
-- Node.js 18 atau lebih baru.
+- Node.js 18 or newer.
 - npm.
-- Backend API berjalan jika ingin mencoba flow data nyata. Dev server platform mem-proxy `/platform-app` ke `http://localhost:8080`.
+- A running backend API if you want to test real data flows. The platform dev server proxies `/platform-app` to `http://localhost:8080`.
 
-## Instalasi
+## Install
 
-Dari root workspace:
+From the workspace root:
 
 ```bash
 npm install
 ```
 
-## Menjalankan Aplikasi
+## Run Locally
 
 ```bash
 npm run dev
 ```
 
-Command ini menjalankan `platform-app` melalui workspace npm.
+This runs `platform-app` through npm workspaces.
 
-Alternatif langsung:
+Alternative:
 
 ```bash
 npm run dev -w platform-app
 ```
 
-Secara default Vite akan menampilkan URL lokal di terminal.
+Vite will print the local URL in the terminal.
 
 ## Build
 
-Build semua:
+Build everything:
 
 ```bash
 npm run build
 ```
 
-Build platform app saja:
+Build only the platform app:
 
 ```bash
 npm run build -w platform-app
 ```
 
-Build plugin tertentu:
+Build a specific plugin:
 
 ```bash
 npm run build -w plugins/plugin-example
 ```
 
-Package `core-api`, `core-starter`, dan `core-ui` bersifat source-only di workspace ini, sehingga script root `build:core` tidak menghasilkan bundle terpisah.
+`core-api`, `core-starter`, and `core-ui` are source-only packages in this workspace, so the root `build:core` script does not produce separate bundles.
 
 ## Lint
 
@@ -120,30 +120,30 @@ Package `core-api`, `core-starter`, dan `core-ui` bersifat source-only di worksp
 npm run lint
 ```
 
-Command root menjalankan lint untuk workspace yang memiliki script `lint`.
+The root command runs lint for workspaces that define a `lint` script.
 
-## Cara Runtime Plugin Bekerja
+## How Plugin Runtime Works
 
-1. `platform-app/src/main.tsx` expose core libraries ke global `window`:
+1. `platform-app/src/main.tsx` exposes core libraries globally:
    - `window.GasiCoreApi`
    - `window.GasiCoreStarter`
    - `window.GasiCoreUi`
    - `window.React`
    - `window.ReactRouter`
-2. Host membaca daftar plugin dari `/plugins/manifest.json`.
-3. Host selalu mencoba load `/plugins/plugin-auth.umd.js` lebih dulu.
-4. `loadAndStartPlugins` menambahkan script UMD ke document.
-5. Plugin UMD menjalankan registration ke `pluginRegistry`.
-6. Registry menjalankan lifecycle `onStart`, lalu extension plugin tersedia untuk host.
-7. `platform-app/src/routes/index.tsx` membaca route extension dan merendernya.
+2. The host reads plugin URLs from `/plugins/manifest.json`.
+3. The host always tries to load `/plugins/plugin-auth.umd.js` first.
+4. `loadAndStartPlugins` injects each UMD script into the document.
+5. The plugin UMD bundle registers itself with `pluginRegistry`.
+6. The registry runs the plugin lifecycle and activates its extensions.
+7. `platform-app/src/routes/index.tsx` reads route extensions and renders them.
 
-Manifest plugin berada di:
+Plugin manifest path:
 
 ```text
 platform-app/public/plugins/manifest.json
 ```
 
-Format manifest:
+Manifest format:
 
 ```json
 [
@@ -152,11 +152,11 @@ Format manifest:
 ]
 ```
 
-## Membuat Plugin Frontend
+## Creating a Frontend Plugin
 
-Cara paling disarankan adalah memakai GASI CLI agar struktur plugin konsisten. Jika membuat manual, ikuti pola `plugins/plugin-example`.
+The recommended path is to use GASI CLI so the generated structure stays consistent. If you create a plugin manually, follow `plugins/plugin-example`.
 
-Minimal `src/index.ts` plugin:
+Minimal plugin entry:
 
 ```ts
 import { Actions, ExtensionPoints, pluginRegistry } from '@gasi/core-api';
@@ -182,71 +182,71 @@ pluginRegistry.register({
 });
 ```
 
-Build plugin:
+Build the plugin:
 
 ```bash
 npm run build -w plugins/plugin-example
 ```
 
-Deploy hasil build ke host:
+Deploy the build output to the host:
 
-- salin bundle UMD ke `platform-app/public/plugins/`;
-- tambahkan URL bundle ke `platform-app/public/plugins/manifest.json`;
-- restart atau refresh dev server.
+- copy the UMD bundle to `platform-app/public/plugins/`;
+- add the bundle URL to `platform-app/public/plugins/manifest.json`;
+- restart or refresh the dev server.
 
 ## File Naming
 
-| Kategori | Konvensi | Contoh |
+| Category | Convention | Example |
 | --- | --- | --- |
-| Shadcn/base UI | kebab-case | `button.tsx`, `dropdown-menu.tsx` |
+| Base UI | kebab-case | `button.tsx`, `dropdown-menu.tsx` |
 | Component | PascalCase | `EmployeeForm.tsx`, `ConfirmDialog.tsx` |
 | Page | PascalCase | `EmployeeListPage.tsx` |
-| Hook | camelCase dengan prefix `use` | `useEmployee.ts` |
+| Hook | camelCase with `use` prefix | `useEmployee.ts` |
 | Service | camelCase | `employeeService.ts` |
 | Schema | camelCase | `employeeCreateSchema.ts` |
 | Types | camelCase + `.types.ts` | `employee.types.ts` |
 | Route module | `routes.tsx` | `routes.tsx` |
 | Utility | camelCase | `baseService.ts`, `date.ts` |
 
-## Environment dan API
+## Environment and API
 
-`platform-app/vite.config.ts` mem-proxy request berikut:
+`platform-app/vite.config.ts` proxies:
 
 ```text
 /platform-app -> http://localhost:8080
 ```
 
-Axios instance bersama berada di `core-ui/src/lib/axios.ts` dan diekspor sebagai `api`.
+The shared axios instance is in `core-ui/src/lib/axios.ts` and is exported as `api`.
 
-## README Lanjutan
+## Related READMEs
 
-- `core-api/README.md`: kontrak plugin dan registry.
-- `core-starter/README.md`: loader, hooks, dan session store.
-- `core-ui/README.md`: shared UI dan helper aplikasi.
-- `platform-app/README.md`: host application dan manifest plugin.
+- `core-api/README.md`: plugin contracts and registry.
+- `core-starter/README.md`: loader, hooks, and session store.
+- `core-ui/README.md`: shared UI and app helpers.
+- `platform-app/README.md`: host application and plugin manifest.
 
 ## Troubleshooting
 
-### Plugin tidak muncul
+### Plugin does not appear
 
-Periksa:
+Check that:
 
-- bundle plugin ada di `platform-app/public/plugins/`;
-- URL bundle terdaftar di `platform-app/public/plugins/manifest.json`;
-- plugin memanggil `pluginRegistry.register`;
-- route plugin menggunakan `ExtensionPoints.ROUTE`;
-- console browser tidak menunjukkan error saat load script.
+- the plugin bundle exists in `platform-app/public/plugins/`;
+- the bundle URL is listed in `platform-app/public/plugins/manifest.json`;
+- the plugin calls `pluginRegistry.register`;
+- the plugin route uses `ExtensionPoints.ROUTE`;
+- the browser console has no script loading error.
 
-### Route plugin kena 403
+### Plugin route returns 403
 
-Periksa `resource` dan `action` route. Permission dihitung sebagai:
+Check the route `resource` and `action`. Permission is resolved as:
 
 ```text
 {resource}:{action}
 ```
 
-Contoh `resource: "employee"` dan `action: Actions.READ` menjadi `employee:read`.
+For example, `resource: "employee"` and `action: Actions.READ` become `employee:read`.
 
-### Request API gagal saat dev
+### API requests fail in development
 
-Pastikan backend berjalan di `http://localhost:8080` atau sesuaikan proxy di `platform-app/vite.config.ts`.
+Make sure the backend is running on `http://localhost:8080`, or update the proxy in `platform-app/vite.config.ts`.
